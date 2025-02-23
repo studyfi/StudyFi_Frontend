@@ -33,9 +33,9 @@ class AddMembersPage extends StatelessWidget {
         padding: EdgeInsets.all(10),
         itemBuilder: (context, index) {
           return Member(
-              imagePath: "assets/community.jpg",
-              title: "Community Helpers",
-              description: "Join us in making a difference in our community.");
+            imagePath: "assets/profile2.jpg",
+            name: "Rachel Green",
+          );
         },
       ),
     );
