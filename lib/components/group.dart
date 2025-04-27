@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:studyfi/components/button.dart';
 import 'package:studyfi/components/custom_poppins_text.dart';
 import 'package:studyfi/constants.dart';
+import 'package:studyfi/screens/groups/group_info_page.dart';
 
 class Group extends StatelessWidget {
   final String imagePath;
@@ -63,7 +64,12 @@ class Group extends StatelessWidget {
           ),
           Button(
               buttonText: "View details",
-              onTap: () {},
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => GroupInfoPage()),
+                );
+              },
               buttonColor: Colors.black)
         ],
       ),

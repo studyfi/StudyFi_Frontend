@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:studyfi/components/custom_poppins_text.dart';
 import 'package:studyfi/components/text_field.dart';
 import 'package:studyfi/constants.dart';
-import 'package:studyfi/screens/homepage.dart';
+import 'package:studyfi/screens/home_page.dart';
 import 'package:studyfi/screens/signup_page.dart';
 
 import '../components/button.dart';

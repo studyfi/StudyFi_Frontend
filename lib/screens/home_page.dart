@@ -4,7 +4,9 @@ import 'package:studyfi/components/updates.dart';
 import 'package:studyfi/constants.dart';
 import 'package:studyfi/screens/academic/academic_page.dart';
 import 'package:studyfi/screens/groups/groups_page.dart';
-import 'package:studyfi/screens/news/news_page.dart';
+import 'package:studyfi/screens/groups/news_page.dart';
+import 'package:studyfi/screens/notifications_page.dart';
+import 'package:studyfi/screens/profile_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -20,8 +22,7 @@ class _HomePageState extends State<HomePage> {
   final List<Widget> _pages = [
     HomeScreenContent(), // Separate widget for home content
     GroupsPage(),
-    AcademicPage(),
-    NewsPage()
+    ProfilePage()
   ];
 
   void _onItemTapped(int index) {
@@ -50,12 +51,8 @@ class _HomePageState extends State<HomePage> {
             label: 'Groups',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.menu_book_rounded),
-            label: 'Academic',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.newspaper),
-            label: 'News',
+            icon: Icon(Icons.person),
+            label: 'Profile',
           ),
         ],
       ),
@@ -74,9 +71,19 @@ class HomeScreenContent extends StatelessWidget {
           children: [
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [Icon(Icons.menu), Icon(Icons.notifications)],
+              children: [
+                IconButton(onPressed: () {}, icon: Icon(Icons.menu)),
+                IconButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => NotificationsPage()),
+                      );
+                    },
+                    icon: Icon(Icons.notifications))
+              ],
             ),
-            const SizedBox(height: 12),
             Row(
               children: [
                 const CircleAvatar(

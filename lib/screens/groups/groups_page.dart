@@ -20,17 +20,31 @@ class _GroupsPageState extends State<GroupsPage> {
 
   void _showAddGroupDialog() {
     TextEditingController groupController = TextEditingController();
+    TextEditingController descriptionController = TextEditingController();
 
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
           title: Text("Create New Group"),
-          content: TextField(
-            controller: groupController,
-            decoration: InputDecoration(
-              hintText: "Enter group name",
-            ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: groupController,
+                decoration: InputDecoration(
+                  hintText: "Enter group name",
+                ),
+              ),
+              SizedBox(height: 12),
+              TextField(
+                controller: descriptionController,
+                decoration: InputDecoration(
+                  hintText: "Enter group description",
+                ),
+                maxLines: 2, // Optional: allow multiple lines
+              ),
+            ],
           ),
           actions: [
             TextButton(
@@ -42,12 +56,8 @@ class _GroupsPageState extends State<GroupsPage> {
                 // if (groupController.text.isNotEmpty) {
                 //   _addNewGroup(groupController.text);
                 // }
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => AddMembersPage()),
-                );
               },
-              child: Text("Add members"),
+              child: Text("Create"),
             ),
           ],
         );
@@ -57,48 +67,61 @@ class _GroupsPageState extends State<GroupsPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        title: Row(
+    return SafeArea(
+      child: Container(
+        color: Colors.white,
+        child: Column(
           children: [
-            Icon(
-              Icons.group,
-              color: Constants.dgreen,
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.group,
+                      color: Constants.dgreen,
+                    ),
+                    SizedBox(width: 8),
+                    CustomPoppinsText(
+                        text: "My Groups",
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black)
+                  ],
+                ),
+                IconButton(
+                  icon: Icon(Icons.search, color: Colors.black),
+                  onPressed: () {
+                    // Implement search functionality here
+                  },
+                ),
+              ],
             ),
-            SizedBox(width: 8),
-            CustomPoppinsText(
-                text: "My Groups",
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: Colors.black)
+            Expanded(
+              child: ListView.builder(
+                itemCount: items.length, // Number of items
+                padding: EdgeInsets.all(10),
+                itemBuilder: (context, index) {
+                  return Group(
+                      imagePath: "assets/group_icon.jpg",
+                      title: "Community Helpers",
+                      description:
+                          "Join us in making a difference in our community.");
+                },
+              ),
+            ),
+            Align(
+              alignment: Alignment.centerRight,
+              child: FloatingActionButton(
+                  onPressed: () {
+                    _showAddGroupDialog();
+                  },
+                  backgroundColor: Constants.dgreen,
+                  shape: CircleBorder(),
+                  child: Icon(Icons.add, color: Colors.white)),
+            ),
           ],
         ),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.search, color: Colors.black),
-            onPressed: () {
-              // Implement search functionality here
-            },
-          ),
-        ],
-      ),
-      body: ListView.builder(
-        itemCount: items.length, // Number of items
-        padding: EdgeInsets.all(10),
-        itemBuilder: (context, index) {
-          return Group(
-              imagePath: "assets/community.jpg",
-              title: "Community Helpers",
-              description: "Join us in making a difference in our community.");
-        },
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _showAddGroupDialog,
-        backgroundColor: Constants.dgreen,
-        shape: CircleBorder(),
-        child: Icon(Icons.add, color: Colors.white),
       ),
     );
   }
