@@ -60,18 +60,6 @@ class _MembersPageState extends State<MembersPage> {
                   },
                 ),
               ),
-              Align(
-                alignment: Alignment.centerRight,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Button2(
-                        buttonText: "Leave",
-                        onTap: () {},
-                        buttonColor: Constants.dgreen),
-                  ],
-                ),
-              )
             ],
           ),
         ),

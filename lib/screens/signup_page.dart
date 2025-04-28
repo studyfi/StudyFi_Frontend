@@ -3,6 +3,7 @@ import 'package:studyfi/components/button.dart';
 import 'package:studyfi/components/custom_epilogue_text.dart';
 import 'package:studyfi/components/text_field.dart';
 import 'package:studyfi/constants.dart';
+import 'package:studyfi/screens/login_page.dart';
 
 class SignupPage extends StatefulWidget {
   const SignupPage({super.key});
@@ -103,7 +104,12 @@ class _SignupPageState extends State<SignupPage> {
                   ),
                   Button(
                       buttonText: "Connect",
-                      onTap: () {},
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => LoginPage()),
+                        );
+                      },
                       buttonColor: Constants.dgreen)
                 ],
               ),

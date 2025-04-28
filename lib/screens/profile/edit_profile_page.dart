@@ -2,18 +2,19 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:studyfi/components/button.dart';
 import 'package:studyfi/components/button2.dart';
 import 'package:studyfi/components/custom_poppins_text.dart';
 import 'package:studyfi/constants.dart';
 
-class EditGroupInfoPage extends StatefulWidget {
-  const EditGroupInfoPage({super.key});
+class EditProfilePage extends StatefulWidget {
+  const EditProfilePage({super.key});
 
   @override
-  State<EditGroupInfoPage> createState() => _EditGroupInfoPageState();
+  State<EditProfilePage> createState() => _EditProfilePageState();
 }
 
-class _EditGroupInfoPageState extends State<EditGroupInfoPage> {
+class _EditProfilePageState extends State<EditProfilePage> {
   File? _imageFile;
 
   Future<void> _pickImage() async {
@@ -49,7 +50,7 @@ class _EditGroupInfoPageState extends State<EditGroupInfoPage> {
                           radius: 60,
                           backgroundImage: _imageFile != null
                               ? FileImage(_imageFile!)
-                              : AssetImage("assets/group_icon.jpg")
+                              : AssetImage("assets/profile.jpg")
                                   as ImageProvider,
                         ),
                         Positioned(
@@ -81,7 +82,7 @@ class _EditGroupInfoPageState extends State<EditGroupInfoPage> {
                       color: Colors.black),
                   TextField(
                     decoration: InputDecoration(
-                      hintText: "Community Helpers",
+                      hintText: "Jane Doe",
                       border: OutlineInputBorder(),
                       contentPadding:
                           EdgeInsets.symmetric(vertical: 8, horizontal: 10),
@@ -91,7 +92,55 @@ class _EditGroupInfoPageState extends State<EditGroupInfoPage> {
                     height: 12,
                   ),
                   CustomPoppinsText(
-                      text: "Description:",
+                      text: "Email:",
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black),
+                  TextField(
+                    decoration: InputDecoration(
+                      hintText: "jane@gmail.com",
+                      border: OutlineInputBorder(),
+                      contentPadding:
+                          EdgeInsets.symmetric(vertical: 8, horizontal: 10),
+                    ),
+                  ),
+                  SizedBox(
+                    height: 12,
+                  ),
+                  CustomPoppinsText(
+                      text: "Phone:",
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black),
+                  TextField(
+                    decoration: InputDecoration(
+                      hintText: "0761234567",
+                      border: OutlineInputBorder(),
+                      contentPadding:
+                          EdgeInsets.symmetric(vertical: 8, horizontal: 10),
+                    ),
+                  ),
+                  SizedBox(
+                    height: 12,
+                  ),
+                  CustomPoppinsText(
+                      text: "Date of birth:",
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black),
+                  TextField(
+                    decoration: InputDecoration(
+                      hintText: "1986/06/06",
+                      border: OutlineInputBorder(),
+                      contentPadding:
+                          EdgeInsets.symmetric(vertical: 8, horizontal: 10),
+                    ),
+                  ),
+                  SizedBox(
+                    height: 12,
+                  ),
+                  CustomPoppinsText(
+                      text: "About:",
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
                       color: Colors.black),
@@ -105,7 +154,24 @@ class _EditGroupInfoPageState extends State<EditGroupInfoPage> {
                     ),
                   ),
                   SizedBox(
-                    height: 20,
+                    height: 12,
+                  ),
+                  CustomPoppinsText(
+                      text: "Address:",
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black),
+                  TextField(
+                    decoration: InputDecoration(
+                      hintText:
+                          "123, Maple Avenue, Greenfield Heights, Colombo 00500, Sri Lanka.",
+                      border: OutlineInputBorder(),
+                      contentPadding:
+                          EdgeInsets.symmetric(vertical: 8, horizontal: 10),
+                    ),
+                  ),
+                  SizedBox(
+                    height: 12,
                   ),
                   Align(
                     alignment: Alignment.centerRight,

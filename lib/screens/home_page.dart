@@ -6,7 +6,7 @@ import 'package:studyfi/screens/academic/academic_page.dart';
 import 'package:studyfi/screens/groups/groups_page.dart';
 import 'package:studyfi/screens/groups/news_page.dart';
 import 'package:studyfi/screens/notifications_page.dart';
-import 'package:studyfi/screens/profile_page.dart';
+import 'package:studyfi/screens/profile/profile_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -72,34 +72,34 @@ class HomeScreenContent extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                IconButton(onPressed: () {}, icon: Icon(Icons.menu)),
-                IconButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) => NotificationsPage()),
-                      );
-                    },
-                    icon: Icon(Icons.notifications))
-              ],
-            ),
-            Row(
-              children: [
-                const CircleAvatar(
-                  radius: 23.0,
+                CircleAvatar(
+                  radius: 20.0,
                   backgroundImage: AssetImage("assets/profile.jpg"),
                 ),
-                const SizedBox(width: 30),
-                CustomPoppinsText(
-                  text: "Welcome back Jane!",
-                  fontSize: 24,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.black,
+                IconButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => NotificationsPage()),
+                    );
+                  },
+                  icon: Icon(Icons.notifications),
+                  iconSize: 30,
                 )
               ],
             ),
-            const SizedBox(height: 30),
+            SizedBox(height: 12),
+            Align(
+              alignment: Alignment.topLeft,
+              child: CustomPoppinsText(
+                text: "Welcome back Jane!",
+                fontSize: 24,
+                fontWeight: FontWeight.w700,
+                color: Colors.black,
+              ),
+            ),
+            SizedBox(height: 30),
             Container(
               width: double.infinity,
               height: 200,
