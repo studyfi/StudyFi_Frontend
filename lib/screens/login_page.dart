@@ -1,9 +1,13 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:studyfi/components/custom_poppins_text.dart';
 import 'package:studyfi/components/text_field.dart';
 import 'package:studyfi/constants.dart';
 import 'package:studyfi/screens/home_page.dart';
 import 'package:studyfi/screens/signup_page.dart';
+import 'package:studyfi/services/api_service.dart';
 
 import '../components/button.dart';
 
@@ -21,6 +25,8 @@ class _LoginPageState extends State<LoginPage> {
 
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
+
+  final ApiService service = ApiService();
 
   @override
   Widget build(BuildContext context) {
@@ -79,11 +85,21 @@ class _LoginPageState extends State<LoginPage> {
                 ),
                 Button(
                   buttonText: "Login",
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => HomePage()),
-                    );
+                  onTap: () async {
+                    bool success = await service.login(
+                        context, emailController.text, passwordController.text);
+                    if (success) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => HomePage()),
+                      );
+                    } else {
+                      // Optional: Show snackbar or dialog
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                            content: Text("Login failed. Please try again.")),
+                      );
+                    }
                   },
                   buttonColor: Constants.dgreen,
                 ),
