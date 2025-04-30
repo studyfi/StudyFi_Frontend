@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:studyfi/models/signup_model.dart';
+import 'package:studyfi/models/profile_model.dart';
 
 class ApiService {
   String baseUrl = "http://192.168.1.100:8080/api/v1";

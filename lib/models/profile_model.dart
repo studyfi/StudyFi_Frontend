@@ -1,4 +1,5 @@
-class SignupModel {
+class ProfileModel {
+  final int id;
   final String name;
   final String email;
   final String password;
@@ -7,8 +8,11 @@ class SignupModel {
   final String country;
   final String aboutMe;
   final String currentAddress;
+  final String? profileImageUrl;
+  final String? coverImageUrl;
 
-  SignupModel({
+  ProfileModel({
+    required this.id,
     required this.name,
     required this.email,
     required this.password,
@@ -17,10 +21,12 @@ class SignupModel {
     required this.country,
     required this.aboutMe,
     required this.currentAddress,
+    this.profileImageUrl,
+    this.coverImageUrl,
   });
 
-  // Optional: Add a method to convert to JSON if needed.
   Map<String, dynamic> toJson() => {
+        'id': id,
         'name': name,
         'email': email,
         'password': password,
