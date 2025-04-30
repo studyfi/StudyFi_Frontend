@@ -96,4 +96,16 @@ class ApiService {
       return false; // Indicate failure
     }
   }
+
+  Future<UserData> fetchUserData(int userId) async {
+    final response = await http
+        .get(Uri.parse('$baseUrl/users/$userId')); // Use 10.0.2.2 for emulator
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return UserData.fromJson(data);
+    } else {
+      throw Exception('Failed to load user data');
+    }
+  }
 }

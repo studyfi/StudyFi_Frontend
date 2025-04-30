@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:studyfi/components/custom_poppins_text.dart';
 import 'package:studyfi/constants.dart';
+import 'package:studyfi/models/profile_model.dart';
 import 'package:studyfi/screens/home_page.dart';
 import 'package:studyfi/screens/profile/edit_profile_page.dart';
+import 'package:studyfi/services/api_service.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -12,28 +14,39 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  void showAddGroupDialog() {
+  late Future<UserData> _futureUserData;
+
+  ApiService service = ApiService();
+
+  @override
+  void initState() {
+    super.initState();
+    _futureUserData =
+        service.fetchUserData(1); // Replace 1 with the dynamic user ID
+  }
+
+  void showLogoutDialog() {
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: Text("Confirm Logout"),
-          content: Text("Are you sure you want to logout?"),
+          title: const Text("Confirm Logout"),
+          content: const Text("Are you sure you want to logout?"),
           actions: [
             TextButton(
-              onPressed: () => Navigator.of(context).pop(), // Close dialog
-              child: Text("Cancel"),
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text("Cancel"),
             ),
             ElevatedButton(
               onPressed: () {
-                // Handle leave action here
-                Navigator.of(context).pop(); // Close dialog
-                // Optionally: show a snackbar, update state, etc.
+                Navigator.of(context).pop();
+                // Handle logout logic here
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Constants.dgreen,
               ),
-              child: Text("Logout", style: TextStyle(color: Colors.white)),
+              child:
+                  const Text("Logout", style: TextStyle(color: Colors.white)),
             ),
           ],
         );
@@ -43,195 +56,148 @@ class _ProfilePageState extends State<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.all(13.0),
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: FutureBuilder<UserData>(
+          future: _futureUserData,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            } else if (snapshot.hasError) {
+              return Center(child: Text("Error: ${snapshot.error}"));
+            } else if (!snapshot.hasData) {
+              return const Center(child: Text("No user data available"));
+            }
+
+            final user = snapshot.data!;
+
+            return SingleChildScrollView(
+              padding: const EdgeInsets.all(13.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  IconButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => HomePage()),
-                        );
-                      },
-                      icon: Icon(Icons.arrow_back)),
-                  PopupMenuButton<String>(
-                    icon: Icon(
-                      Icons.more_vert,
-                    ),
-                    onSelected: (value) {
-                      // Handle menu selection
-                      if (value == 'edit profile') {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => EditProfilePage()),
-                        );
-                      } else if (value == 'change password') {
-                        // Do delete action
-                      } else if (value == 'logout') {
-                        showAddGroupDialog();
-                      }
-                    },
-                    itemBuilder: (BuildContext context) => [
-                      PopupMenuItem(
-                        value: 'edit profile',
-                        child: Text('Edit Profile'),
+                  // Top row with back button and popup menu
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      IconButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => const HomePage()),
+                          );
+                        },
+                        icon: const Icon(Icons.arrow_back),
                       ),
-                      PopupMenuItem(
-                        value: 'change password',
-                        child: Text('Change password'),
-                      ),
-                      PopupMenuItem(
-                        value: 'logout',
-                        child: Text('Logout'),
+                      PopupMenuButton<String>(
+                        icon: const Icon(Icons.more_vert),
+                        onSelected: (value) {
+                          if (value == 'edit profile') {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) =>
+                                      const EditProfilePage()),
+                            );
+                          } else if (value == 'logout') {
+                            showLogoutDialog();
+                          }
+                        },
+                        itemBuilder: (context) => [
+                          const PopupMenuItem(
+                            value: 'edit profile',
+                            child: Text('Edit Profile'),
+                          ),
+                          const PopupMenuItem(
+                            value: 'change password',
+                            child: Text('Change Password'),
+                          ),
+                          const PopupMenuItem(
+                            value: 'logout',
+                            child: Text('Logout'),
+                          ),
+                        ],
                       ),
                     ],
                   ),
+
+                  // Profile picture
+                  Align(
+                    alignment: Alignment.center,
+                    child: CircleAvatar(
+                      radius: 60,
+                      backgroundImage: NetworkImage(user.profileImageUrl),
+                      onBackgroundImageError: (_, __) =>
+                          const Icon(Icons.person, size: 60),
+                    ),
+                  ),
+
+                  const SizedBox(height: 20),
+                  buildInfoRow("Name:", user.name),
+                  buildInfoRow("Email:", user.email),
+                  buildInfoRow("Phone:", user.phoneContact),
+                  buildInfoRow("Date of birth:", user.birthDate),
+                  buildInfoRow("Country:", user.country),
+                  buildMultilineInfo("About:", user.aboutMe),
+                  buildMultilineInfo("Address:", user.currentAddress),
                 ],
               ),
-              Align(
-                alignment: Alignment.center,
-                child: CircleAvatar(
-                  radius: 60,
-                  backgroundImage: AssetImage("assets/profile.jpg"),
-                ),
-              ),
-              SizedBox(
-                height: 12,
-              ),
-              Row(
-                children: [
-                  CustomPoppinsText(
-                      text: "Name:",
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black),
-                  SizedBox(
-                    width: 50,
-                  ),
-                  CustomPoppinsText(
-                      text: "Jane Doe",
-                      fontSize: 18,
-                      fontWeight: FontWeight.w400,
-                      color: Colors.black),
-                ],
-              ),
-              SizedBox(
-                height: 12,
-              ),
-              Row(
-                children: [
-                  CustomPoppinsText(
-                      text: "Email:",
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black),
-                  SizedBox(
-                    width: 50,
-                  ),
-                  CustomPoppinsText(
-                      text: "jane@gmail.com",
-                      fontSize: 18,
-                      fontWeight: FontWeight.w400,
-                      color: Colors.black),
-                ],
-              ),
-              SizedBox(
-                height: 12,
-              ),
-              Row(
-                children: [
-                  CustomPoppinsText(
-                      text: "Phone:",
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black),
-                  SizedBox(
-                    width: 50,
-                  ),
-                  CustomPoppinsText(
-                      text: "0761234567",
-                      fontSize: 18,
-                      fontWeight: FontWeight.w400,
-                      color: Colors.black),
-                ],
-              ),
-              SizedBox(
-                height: 12,
-              ),
-              Row(
-                children: [
-                  CustomPoppinsText(
-                      text: "Date of birth:",
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black),
-                  SizedBox(
-                    width: 50,
-                  ),
-                  CustomPoppinsText(
-                      text: "1986/06/06",
-                      fontSize: 18,
-                      fontWeight: FontWeight.w400,
-                      color: Colors.black),
-                ],
-              ),
-              SizedBox(
-                height: 12,
-              ),
-              Row(
-                children: [
-                  CustomPoppinsText(
-                      text: "About:",
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black),
-                  SizedBox(
-                    width: 50,
-                  ),
-                  Expanded(
-                    child: CustomPoppinsText(
-                        text:
-                            "Passionate IT undergraduate specializing in software engineering, machine learning, and research-driven solutions.",
-                        fontSize: 18,
-                        fontWeight: FontWeight.w400,
-                        color: Colors.black),
-                  ),
-                ],
-              ),
-              SizedBox(
-                height: 12,
-              ),
-              Row(
-                children: [
-                  CustomPoppinsText(
-                      text: "Address:",
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black),
-                  SizedBox(
-                    width: 50,
-                  ),
-                  Expanded(
-                    child: CustomPoppinsText(
-                        text:
-                            "123, Maple Avenue, Greenfield Heights, Colombo 00500, Sri Lanka.",
-                        fontSize: 18,
-                        fontWeight: FontWeight.w400,
-                        color: Colors.black),
-                  ),
-                ],
-              ),
-            ],
-          ),
+            );
+          },
         ),
+      ),
+    );
+  }
+
+  Widget buildInfoRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6.0),
+      child: Row(
+        children: [
+          CustomPoppinsText(
+            text: label,
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+            color: Colors.black,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: CustomPoppinsText(
+              text: value,
+              fontSize: 18,
+              fontWeight: FontWeight.w400,
+              color: Colors.black,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget buildMultilineInfo(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          CustomPoppinsText(
+            text: label,
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+            color: Colors.black,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: CustomPoppinsText(
+              text: value,
+              fontSize: 18,
+              fontWeight: FontWeight.w400,
+              color: Colors.black,
+            ),
+          ),
+        ],
       ),
     );
   }
