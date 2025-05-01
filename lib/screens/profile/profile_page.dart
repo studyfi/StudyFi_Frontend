@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:studyfi/components/custom_poppins_text.dart';
 import 'package:studyfi/constants.dart';
 import 'package:studyfi/models/profile_model.dart';
@@ -15,14 +16,26 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   late Future<UserData> _futureUserData;
-
-  ApiService service = ApiService();
+  final ApiService service = ApiService();
 
   @override
   void initState() {
     super.initState();
-    _futureUserData =
-        service.fetchUserData(1); // Replace 1 with the dynamic user ID
+    loadUserData();
+  }
+
+  void loadUserData() async {
+    final prefs = await SharedPreferences.getInstance();
+    final userId = prefs.getInt('userId') ?? -1;
+
+    if (userId != -1) {
+      setState(() {
+        _futureUserData = service.fetchUserData(userId);
+      });
+    } else {
+      // Optionally show error UI if userId isn't found
+      print("User ID not found in SharedPreferences.");
+    }
   }
 
   void showLogoutDialog() {
@@ -40,7 +53,7 @@ class _ProfilePageState extends State<ProfilePage> {
             ElevatedButton(
               onPressed: () {
                 Navigator.of(context).pop();
-                // Handle logout logic here
+                // You can also clear SharedPreferences here if needed
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Constants.dgreen,
@@ -77,7 +90,6 @@ class _ProfilePageState extends State<ProfilePage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Top row with back button and popup menu
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -107,23 +119,17 @@ class _ProfilePageState extends State<ProfilePage> {
                         },
                         itemBuilder: (context) => [
                           const PopupMenuItem(
-                            value: 'edit profile',
-                            child: Text('Edit Profile'),
-                          ),
+                              value: 'edit profile',
+                              child: Text('Edit Profile')),
                           const PopupMenuItem(
-                            value: 'change password',
-                            child: Text('Change Password'),
-                          ),
+                              value: 'change password',
+                              child: Text('Change Password')),
                           const PopupMenuItem(
-                            value: 'logout',
-                            child: Text('Logout'),
-                          ),
+                              value: 'logout', child: Text('Logout')),
                         ],
                       ),
                     ],
                   ),
-
-                  // Profile picture
                   Align(
                     alignment: Alignment.center,
                     child: CircleAvatar(
@@ -133,7 +139,6 @@ class _ProfilePageState extends State<ProfilePage> {
                           const Icon(Icons.person, size: 60),
                     ),
                   ),
-
                   const SizedBox(height: 20),
                   buildInfoRow("Name:", user.name),
                   buildInfoRow("Email:", user.email),

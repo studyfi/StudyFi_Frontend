@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:studyfi/models/signup_model.dart';
 import 'package:studyfi/models/profile_model.dart';
 
@@ -27,6 +28,10 @@ class ApiService {
         print('Login successful: $responseData');
 
         // You can store token or user info here if needed
+        // Extract user ID and save it globally using SharedPreferences
+        int userId = responseData['id'];
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setInt('userId', userId);
         return true;
       } else {
         print('Login failed: ${response.statusCode}');
