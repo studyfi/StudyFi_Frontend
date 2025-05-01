@@ -7,8 +7,8 @@ class UserData {
   final String country;
   final String aboutMe;
   final String currentAddress;
-  final String profileImageUrl;
-  final String coverImageUrl;
+  final String? profileImageUrl;
+  final String? coverImageUrl;
 
   UserData({
     required this.id,
@@ -19,8 +19,8 @@ class UserData {
     required this.country,
     required this.aboutMe,
     required this.currentAddress,
-    required this.profileImageUrl,
-    required this.coverImageUrl,
+    this.profileImageUrl,
+    this.coverImageUrl,
   });
 
   factory UserData.fromJson(Map<String, dynamic> json) {
@@ -33,8 +33,8 @@ class UserData {
       country: json['country'],
       aboutMe: json['aboutMe'],
       currentAddress: json['currentAddress'],
-      profileImageUrl: json['profileImageUrl'],
-      coverImageUrl: json['coverImageUrl'],
+      profileImageUrl: json['profileImageUrl'] as String?,
+      coverImageUrl: json['coverImageUrl'] as String?,
     );
   }
 }

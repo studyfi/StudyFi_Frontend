@@ -7,6 +7,8 @@ class SignupModel {
   final String country;
   final String aboutMe;
   final String currentAddress;
+  final String? profileFile; // path to image
+  final String? coverFile; // path to image
 
   SignupModel({
     required this.name,
@@ -17,6 +19,8 @@ class SignupModel {
     required this.country,
     required this.aboutMe,
     required this.currentAddress,
+    this.profileFile,
+    this.coverFile,
   });
 
   // Optional: Add a method to convert to JSON if needed.
@@ -29,5 +33,7 @@ class SignupModel {
         'country': country,
         'aboutMe': aboutMe,
         'currentAddress': currentAddress,
+        'profileFile': profileFile,
+        'coverFile': coverFile,
       };
 }

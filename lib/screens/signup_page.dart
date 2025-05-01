@@ -1,6 +1,8 @@
 import 'dart:developer';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:studyfi/components/button.dart';
 import 'package:studyfi/components/custom_epilogue_text.dart';
 import 'package:studyfi/components/text_field.dart';
@@ -26,6 +28,8 @@ class _SignupPageState extends State<SignupPage> {
   String country = "";
   String password = "";
   bool passwordvisible = false;
+  File? _profileImage;
+  File? _coverImage;
 
   final nameController = TextEditingController();
   final emailController = TextEditingController();
@@ -42,6 +46,26 @@ class _SignupPageState extends State<SignupPage> {
 
   ApiService service = ApiService();
 
+  Future<void> _pickProfileImage() async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+    if (pickedFile != null) {
+      setState(() {
+        _profileImage = File(pickedFile.path);
+      });
+    }
+  }
+
+  Future<void> _pickCoverImage() async {
+    final pickedFile =
+        await ImagePicker().pickImage(source: ImageSource.gallery);
+    if (pickedFile != null) {
+      setState(() {
+        _coverImage = File(pickedFile.path);
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -50,24 +74,68 @@ class _SignupPageState extends State<SignupPage> {
         child: Column(
           children: [
             Container(
-                height: 250,
-                width: double.maxFinite,
-                color: Constants.lgreen,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Image.asset(
-                      "assets/signup.png",
-                      height: 100,
-                      width: 100,
+              height: 250,
+              width: double.maxFinite,
+              child: Stack(
+                children: [
+                  Container(
+                    height: 250,
+                    width: double.maxFinite,
+                    decoration: BoxDecoration(
+                      image: DecorationImage(
+                        image: _coverImage != null
+                            ? FileImage(_coverImage!)
+                            : AssetImage("assets/cover.jpg") as ImageProvider,
+                        fit: BoxFit.cover,
+                      ),
                     ),
-                    CustomEpilogueText(
-                        text: "Join now for academic networking!",
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.black),
-                  ],
-                )),
+                  ),
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: GestureDetector(
+                      onTap: _pickCoverImage,
+                      child: CircleAvatar(
+                        radius: 18,
+                        backgroundColor: Colors.black54,
+                        child: Icon(Icons.edit, color: Colors.white, size: 18),
+                      ),
+                    ),
+                  ),
+                  Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Stack(
+                          children: [
+                            CircleAvatar(
+                              radius: 60,
+                              backgroundImage: _profileImage != null
+                                  ? FileImage(_profileImage!)
+                                  : AssetImage("assets/profile.jpg")
+                                      as ImageProvider,
+                            ),
+                            Positioned(
+                              bottom: 0,
+                              right: 0,
+                              child: GestureDetector(
+                                onTap: _pickProfileImage,
+                                child: CircleAvatar(
+                                  radius: 20,
+                                  backgroundColor: Constants.dgreen,
+                                  child: Icon(Icons.edit,
+                                      color: Colors.white, size: 20),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
             Container(
               padding: const EdgeInsets.only(
                   left: 20.0, right: 20.0, top: 20.0, bottom: 20.0),
@@ -143,9 +211,8 @@ class _SignupPageState extends State<SignupPage> {
                           country: countryController.text,
                           aboutMe: aboutController.text,
                           currentAddress: addressController.text,
-                          // profileFile:
-                          //     defaultProfileImagePath, // Add default image
-                          // coverFile: defaultCoverImagePath,
+                          profileFile: _profileImage?.path,
+                          coverFile: _coverImage?.path,
                         );
                         // Call the signup function from the service
                         bool isSuccessful =

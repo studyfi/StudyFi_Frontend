@@ -21,20 +21,19 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   void initState() {
     super.initState();
-    loadUserData();
+    // Initialize _futureUserData with a default Future
+    _futureUserData = _loadUserData();
   }
 
-  void loadUserData() async {
+  Future<UserData> _loadUserData() async {
     final prefs = await SharedPreferences.getInstance();
     final userId = prefs.getInt('userId') ?? -1;
 
     if (userId != -1) {
-      setState(() {
-        _futureUserData = service.fetchUserData(userId);
-      });
+      return service.fetchUserData(userId);
     } else {
-      // Optionally show error UI if userId isn't found
-      print("User ID not found in SharedPreferences.");
+      // Throw an error or return a fallback value
+      throw Exception("User ID not found in SharedPreferences.");
     }
   }
 
@@ -134,8 +133,11 @@ class _ProfilePageState extends State<ProfilePage> {
                     alignment: Alignment.center,
                     child: CircleAvatar(
                       radius: 60,
-                      backgroundImage: NetworkImage(user.profileImageUrl),
-                      onBackgroundImageError: (_, __) =>
+                      backgroundImage: user.profileImageUrl != null &&
+                              user.profileImageUrl!.isNotEmpty
+                          ? NetworkImage(user.profileImageUrl!)
+                          : const AssetImage("assets/profile.jpg"),
+                      onBackgroundImageError: (error, stackTrace) =>
                           const Icon(Icons.person, size: 60),
                     ),
                   ),
