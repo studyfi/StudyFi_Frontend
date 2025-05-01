@@ -5,7 +5,7 @@ import 'package:studyfi/constants.dart';
 import 'package:studyfi/screens/groups/group_info_page.dart';
 
 class Group extends StatelessWidget {
-  final String imagePath;
+  final String? imagePath;
   final String title;
   final String description;
 
@@ -33,44 +33,61 @@ class Group extends StatelessWidget {
             children: [
               CircleAvatar(
                 radius: 30,
-                backgroundImage: AssetImage(imagePath),
+                backgroundImage:
+                    imagePath != null && imagePath!.startsWith('http')
+                        ? NetworkImage(imagePath!)
+                        : AssetImage(imagePath ?? 'assets/group_icon.jpg'),
+                child: imagePath != null && imagePath!.startsWith('http')
+                    ? null
+                    : ClipOval(
+                        child: Image.asset(
+                          imagePath ?? 'assets/group_icon.jpg',
+                          fit: BoxFit.cover,
+                          width: 60,
+                          height: 60,
+                        ),
+                      ),
               ),
-              SizedBox(
-                width: 10,
-              ),
+              SizedBox(width: 10),
               Expanded(
                 child: Column(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      CustomPoppinsText(
-                        color: Colors.black,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                        text: title,
-                      ),
-                      SizedBox(
-                        height: 12,
-                      ),
-                      CustomPoppinsText(
-                        color: Colors.grey,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        text: description,
-                      )
-                    ]),
-              )
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    CustomPoppinsText(
+                      color: Colors.black,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      text: title,
+                    ),
+                    SizedBox(height: 12),
+                    CustomPoppinsText(
+                      color: Colors.grey,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      text: description,
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
           Button(
-              buttonText: "View details",
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => GroupInfoPage()),
-                );
-              },
-              buttonColor: Colors.black)
+            buttonText: "View details",
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => GroupInfoPage(
+                    imagePath: imagePath,
+                    title: title,
+                    description: description,
+                  ),
+                ),
+              );
+            },
+            buttonColor: Colors.black,
+          ),
         ],
       ),
     );

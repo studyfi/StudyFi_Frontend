@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:studyfi/models/group_data_model.dart';
 import 'package:studyfi/models/profile_edit_model.dart';
 import 'package:studyfi/models/signup_model.dart';
 import 'package:studyfi/models/profile_model.dart';
@@ -230,6 +231,24 @@ class ApiService {
             content: Text('An error occurred during profile update.')),
       );
       return false;
+    }
+  }
+
+  Future<GroupData> fetchGroupData(int userId) async {
+    try {
+      final response =
+          await http.get(Uri.parse('$baseUrl/groups/user/$userId'));
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = json.decode(response.body);
+        return GroupData.fromJson(data);
+      } else {
+        print('Failed to load group. Status code: ${response.statusCode}');
+        throw Exception('Failed to load group');
+      }
+    } catch (e) {
+      print('Error fetching group: $e');
+      throw Exception('Failed to load group: $e');
     }
   }
 }

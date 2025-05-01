@@ -2,17 +2,23 @@ import 'package:flutter/material.dart';
 import 'package:studyfi/components/button.dart';
 import 'package:studyfi/components/button2.dart';
 import 'package:studyfi/components/custom_poppins_text.dart';
-import 'package:studyfi/components/group.dart';
-import 'package:studyfi/components/member2.dart';
 import 'package:studyfi/constants.dart';
 import 'package:studyfi/screens/groups/contents_page.dart';
 import 'package:studyfi/screens/groups/edit_group_info_page.dart';
-import 'package:studyfi/screens/groups/groups_page.dart';
 import 'package:studyfi/screens/groups/members_page.dart';
 import 'package:studyfi/screens/groups/news_page.dart';
 
 class GroupInfoPage extends StatefulWidget {
-  const GroupInfoPage({super.key});
+  final String? imagePath;
+  final String title;
+  final String description;
+
+  const GroupInfoPage({
+    super.key,
+    this.imagePath,
+    required this.title,
+    required this.description,
+  });
 
   @override
   State<GroupInfoPage> createState() => _GroupInfoPageState();
@@ -28,14 +34,12 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
           content: Text("Are you sure you want to leave this group?"),
           actions: [
             TextButton(
-              onPressed: () => Navigator.of(context).pop(), // Close dialog
+              onPressed: () => Navigator.of(context).pop(),
               child: Text("Cancel"),
             ),
             ElevatedButton(
               onPressed: () {
-                // Handle leave action here
-                Navigator.of(context).pop(); // Close dialog
-                // Optionally: show a snackbar, update state, etc.
+                Navigator.of(context).pop();
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Constants.dgreen,
@@ -61,7 +65,7 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
         ),
         actions: [
           PopupMenuButton<String>(
-            icon: Icon(Icons.more_vert, color: Colors.black), // 3-dot icon
+            icon: Icon(Icons.more_vert, color: Colors.black),
             onSelected: (String result) {
               if (result == 'Edit group info') {
                 Navigator.push(
@@ -88,28 +92,37 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
               children: [
                 CircleAvatar(
                   radius: 50,
-                  backgroundImage: AssetImage("assets/group_icon.jpg"),
+                  backgroundImage: widget.imagePath != null &&
+                          widget.imagePath!.startsWith('http')
+                      ? NetworkImage(widget.imagePath!)
+                      : AssetImage(widget.imagePath ?? 'assets/group_icon.jpg'),
+                  child: widget.imagePath != null &&
+                          widget.imagePath!.startsWith('http')
+                      ? null
+                      : ClipOval(
+                          child: Image.asset(
+                            widget.imagePath ?? 'assets/group_icon.jpg',
+                            fit: BoxFit.cover,
+                            width: 100,
+                            height: 100,
+                          ),
+                        ),
                 ),
-                SizedBox(
-                  height: 12,
-                ),
+                SizedBox(height: 12),
                 CustomPoppinsText(
-                    text: "Community Helpers",
-                    fontSize: 24,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black),
-                SizedBox(
-                  height: 12,
+                  text: widget.title,
+                  fontSize: 24,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black,
                 ),
+                SizedBox(height: 12),
                 CustomPoppinsText(
-                    text:
-                        "Connecting academics for collaboration and networking opportunities",
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.black),
-                SizedBox(
-                  height: 20,
+                  text: widget.description,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black,
                 ),
+                SizedBox(height: 20),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -125,21 +138,24 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
                         height: 170,
                         width: 170,
                         decoration: BoxDecoration(
-                            color: Constants.lgreen,
-                            borderRadius: BorderRadius.circular(10)),
+                          color: Constants.lgreen,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             CustomPoppinsText(
-                                text: "Contents",
-                                fontSize: 16,
-                                fontWeight: FontWeight.w500,
-                                color: Colors.black),
+                              text: "Contents",
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.black,
+                            ),
                             CustomPoppinsText(
-                                text: "56",
-                                fontSize: 24,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.black),
+                              text: "56",
+                              fontSize: 24,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black,
+                            ),
                           ],
                         ),
                       ),
@@ -155,30 +171,31 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
                         height: 170,
                         width: 170,
                         decoration: BoxDecoration(
-                            color: Constants.lgreen,
-                            borderRadius: BorderRadius.circular(10)),
+                          color: Constants.lgreen,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             CustomPoppinsText(
-                                text: "News",
-                                fontSize: 16,
-                                fontWeight: FontWeight.w500,
-                                color: Colors.black),
+                              text: "News",
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.black,
+                            ),
                             CustomPoppinsText(
-                                text: "56",
-                                fontSize: 24,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.black),
+                              text: "56",
+                              fontSize: 24,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black,
+                            ),
                           ],
                         ),
                       ),
-                    )
+                    ),
                   ],
                 ),
-                SizedBox(
-                  height: 12,
-                ),
+                SizedBox(height: 12),
                 Align(
                   alignment: Alignment.bottomLeft,
                   child: GestureDetector(
@@ -192,43 +209,45 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
                       height: 170,
                       width: 170,
                       decoration: BoxDecoration(
-                          color: Constants.lgreen,
-                          borderRadius: BorderRadius.circular(10)),
+                        color: Constants.lgreen,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           CustomPoppinsText(
-                              text: "Members",
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.black),
+                            text: "Members",
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.black,
+                          ),
                           CustomPoppinsText(
-                              text: "56",
-                              fontSize: 24,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.black),
+                            text: "56",
+                            fontSize: 24,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.black,
+                          ),
                         ],
                       ),
                     ),
                   ),
                 ),
-                SizedBox(
-                  height: 80,
-                ),
+                SizedBox(height: 80),
                 Align(
                   alignment: Alignment.centerRight,
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Button2(
-                          buttonText: "Leave",
-                          onTap: () {
-                            showAddGroupDialog();
-                          },
-                          buttonColor: Constants.dgreen),
+                        buttonText: "Leave",
+                        onTap: () {
+                          showAddGroupDialog();
+                        },
+                        buttonColor: Constants.dgreen,
+                      ),
                     ],
                   ),
-                )
+                ),
               ],
             ),
           ),

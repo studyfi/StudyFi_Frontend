@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
+
 import 'package:studyfi/components/custom_poppins_text.dart';
 import 'package:studyfi/components/group.dart';
 import 'package:studyfi/constants.dart';
-import 'package:studyfi/screens/groups/add_members_page.dart';
+import 'package:studyfi/models/group_data_model.dart';
 
 class GroupsPage extends StatefulWidget {
   GroupsPage({super.key});
@@ -12,10 +16,40 @@ class GroupsPage extends StatefulWidget {
 }
 
 class _GroupsPageState extends State<GroupsPage> {
-  final List<String> items = List.generate(10, (index) => "Item ${index + 1}");
-  void _addNewGroup(String groupName) {
-    setState(() {});
-    Navigator.of(context).pop(); // Close the dialog
+  List<GroupData> groups = [];
+
+  @override
+  void initState() {
+    super.initState();
+    loadGroupsForUser();
+  }
+
+  Future<int?> getUserIdFromPrefs() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getInt('userId');
+  }
+
+  Future<void> loadGroupsForUser() async {
+    final userId = await getUserIdFromPrefs();
+    if (userId == null) {
+      print("User ID not found.");
+      return;
+    }
+
+    final response = await http
+        .get(Uri.parse('http://192.168.1.100:8080/api/v1/groups/user/$userId'));
+
+    if (response.statusCode == 200) {
+      final List<dynamic> jsonList = json.decode(response.body);
+      final List<GroupData> fetchedGroups =
+          jsonList.map((jsonItem) => GroupData.fromJson(jsonItem)).toList();
+
+      setState(() {
+        groups = fetchedGroups;
+      });
+    } else {
+      print('Failed to fetch groups: ${response.statusCode}');
+    }
   }
 
   void _showAddGroupDialog() {
@@ -32,17 +66,14 @@ class _GroupsPageState extends State<GroupsPage> {
             children: [
               TextField(
                 controller: groupController,
-                decoration: InputDecoration(
-                  hintText: "Enter group name",
-                ),
+                decoration: InputDecoration(hintText: "Enter group name"),
               ),
               SizedBox(height: 12),
               TextField(
                 controller: descriptionController,
-                decoration: InputDecoration(
-                  hintText: "Enter group description",
-                ),
-                maxLines: 2, // Optional: allow multiple lines
+                decoration:
+                    InputDecoration(hintText: "Enter group description"),
+                maxLines: 2,
               ),
             ],
           ),
@@ -53,9 +84,7 @@ class _GroupsPageState extends State<GroupsPage> {
             ),
             ElevatedButton(
               onPressed: () {
-                // if (groupController.text.isNotEmpty) {
-                //   _addNewGroup(groupController.text);
-                // }
+                // API call to add group can be triggered here
               },
               child: Text("Create"),
             ),
@@ -77,48 +106,50 @@ class _GroupsPageState extends State<GroupsPage> {
               children: [
                 Row(
                   children: [
-                    Icon(
-                      Icons.group,
-                      color: Constants.dgreen,
-                    ),
+                    Icon(Icons.group, color: Constants.dgreen),
                     SizedBox(width: 8),
                     CustomPoppinsText(
-                        text: "My Groups",
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.black)
+                      text: "My Groups",
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black,
+                    )
                   ],
                 ),
                 IconButton(
                   icon: Icon(Icons.search, color: Colors.black),
                   onPressed: () {
-                    // Implement search functionality here
+                    // Search functionality here
                   },
                 ),
               ],
             ),
             Expanded(
-              child: ListView.builder(
-                itemCount: items.length, // Number of items
-                padding: EdgeInsets.all(10),
-                itemBuilder: (context, index) {
-                  return Group(
-                      imagePath: "assets/group_icon.jpg",
-                      title: "Community Helpers",
-                      description:
-                          "Join us in making a difference in our community.");
-                },
-              ),
+              child: groups.isEmpty
+                  ? Center(child: Text("No groups found"))
+                  : ListView.builder(
+                      itemCount: groups.length,
+                      padding: EdgeInsets.all(10),
+                      itemBuilder: (context, index) {
+                        final group = groups[index];
+                        return Group(
+                          imagePath: group.imageUrl!.isNotEmpty
+                              ? group.imageUrl
+                              : 'assets/group_icon.jpg',
+                          title: group.name,
+                          description: group.description,
+                        );
+                      },
+                    ),
             ),
             Align(
               alignment: Alignment.centerRight,
               child: FloatingActionButton(
-                  onPressed: () {
-                    _showAddGroupDialog();
-                  },
-                  backgroundColor: Constants.dgreen,
-                  shape: CircleBorder(),
-                  child: Icon(Icons.add, color: Colors.white)),
+                onPressed: _showAddGroupDialog,
+                backgroundColor: Constants.dgreen,
+                shape: CircleBorder(),
+                child: Icon(Icons.add, color: Colors.white),
+              ),
             ),
           ],
         ),
