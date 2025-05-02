@@ -1,13 +1,18 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
+import 'package:mime/mime.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:studyfi/models/group_content_model.dart';
 import 'package:studyfi/models/group_data_model.dart';
 import 'package:studyfi/models/not_joined_group_model.dart';
 import 'package:studyfi/models/profile_edit_model.dart';
 import 'package:studyfi/models/signup_model.dart';
 import 'package:studyfi/models/profile_model.dart';
 import 'dart:io';
+
+import 'package:studyfi/models/upload_content_model.dart';
 
 class ApiService {
   String baseUrl = "http://192.168.1.100:8080/api/v1";
@@ -341,6 +346,61 @@ class ApiService {
     } else {
       print('Failed to load not-joined groups: ${response.statusCode}');
       throw Exception('Failed to load not-joined groups');
+    }
+  }
+
+  Future<List<GroupContent>> fetchGroupContents(int groupId) async {
+    final url = Uri.parse('$baseUrl/content/group/$groupId');
+    final response = await http.get(url);
+
+    if (response.statusCode == 200) {
+      final List<dynamic> data = json.decode(response.body);
+      return data.map((item) => GroupContent.fromJson(item)).toList();
+    } else {
+      print('Failed to fetch group content: ${response.statusCode}');
+      throw Exception('Failed to fetch group content');
+    }
+  }
+
+  Future<bool> uploadGroupContent(UploadContentModel content) async {
+    try {
+      final uri = Uri.parse('$baseUrl/content/upload');
+      final request = http.MultipartRequest('POST', uri);
+
+      // Add form fields
+      request.fields['title'] = content.title;
+      request.fields['contentText'] = content.contentText;
+      request.fields['author'] = content.author;
+      request.fields['groupIds[]'] = content.groupId.toString();
+
+      // Detect file type
+      final mimeType = lookupMimeType(content.file.path)?.split('/');
+      if (mimeType == null || mimeType.length != 2) {
+        throw Exception("Unable to detect file type");
+      }
+
+      // Add file
+      request.files.add(await http.MultipartFile.fromPath(
+        'file',
+        content.file.path,
+        contentType: MediaType(mimeType[0], mimeType[1]),
+      ));
+
+      // Send the request
+      final response = await request.send();
+      final responseData = await http.Response.fromStream(response);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        print("Upload success: ${responseData.body}");
+        return true;
+      } else {
+        print(
+            "Upload failed: ${responseData.statusCode} - ${responseData.body}");
+        return false;
+      }
+    } catch (e) {
+      print("Exception while uploading content: $e");
+      return false;
     }
   }
 }

@@ -5,12 +5,14 @@ import 'package:studyfi/constants.dart';
 import 'package:studyfi/screens/groups/group_info_page.dart';
 
 class Group extends StatelessWidget {
+  final int groupId;
   final String? imagePath;
   final String title;
   final String description;
 
   const Group({
     super.key,
+    required this.groupId,
     required this.imagePath,
     required this.title,
     required this.description,
@@ -34,19 +36,10 @@ class Group extends StatelessWidget {
               CircleAvatar(
                 radius: 30,
                 backgroundImage:
-                    imagePath != null && imagePath!.startsWith('http')
+                    (imagePath != null && imagePath!.startsWith('http'))
                         ? NetworkImage(imagePath!)
-                        : AssetImage(imagePath ?? 'assets/group_icon.jpg'),
-                child: imagePath != null && imagePath!.startsWith('http')
-                    ? null
-                    : ClipOval(
-                        child: Image.asset(
-                          imagePath ?? 'assets/group_icon.jpg',
-                          fit: BoxFit.cover,
-                          width: 60,
-                          height: 60,
-                        ),
-                      ),
+                        : const AssetImage('assets/group_icon.jpg')
+                            as ImageProvider,
               ),
               SizedBox(width: 10),
               Expanded(
@@ -79,6 +72,7 @@ class Group extends StatelessWidget {
                 context,
                 MaterialPageRoute(
                   builder: (context) => GroupInfoPage(
+                    groupId: groupId,
                     imagePath: imagePath,
                     title: title,
                     description: description,

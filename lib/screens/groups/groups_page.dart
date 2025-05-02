@@ -203,11 +203,10 @@ class _GroupsPageState extends State<GroupsPage> {
                       itemBuilder: (context, index) {
                         final group = groups[index];
                         return Group(
-                          imagePath: group.imageUrl!.isNotEmpty
-                              ? group.imageUrl
-                              : 'assets/group_icon.jpg',
+                          groupId: group.id,
                           title: group.name,
                           description: group.description,
+                          imagePath: group.imageUrl,
                         );
                       },
                     ),

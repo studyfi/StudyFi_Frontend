@@ -12,9 +12,11 @@ class GroupInfoPage extends StatefulWidget {
   final String? imagePath;
   final String title;
   final String description;
+  final int groupId;
 
   const GroupInfoPage({
     super.key,
+    required this.groupId,
     this.imagePath,
     required this.title,
     required this.description,
@@ -131,7 +133,12 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                              builder: (context) => ContentsPage()),
+                            builder: (context) => ContentsPage(
+                              groupId: widget.groupId,
+                              groupName: widget.title,
+                              groupImageUrl: widget.imagePath,
+                            ),
+                          ),
                         );
                       },
                       child: Container(
