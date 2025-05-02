@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:studyfi/models/group_data_model.dart';
+import 'package:studyfi/models/not_joined_group_model.dart';
 import 'package:studyfi/models/profile_edit_model.dart';
 import 'package:studyfi/models/signup_model.dart';
 import 'package:studyfi/models/profile_model.dart';
@@ -31,6 +32,8 @@ class ApiService {
         int userId = responseData['id'];
         final prefs = await SharedPreferences.getInstance();
         await prefs.setInt('userId', userId);
+        await prefs.setString(
+            'profileImageUrl', responseData['profileImageUrl'] ?? '');
         return true;
       } else {
         print('Login failed: ${response.statusCode}');
@@ -249,6 +252,95 @@ class ApiService {
     } catch (e) {
       print('Error fetching group: $e');
       throw Exception('Failed to load group: $e');
+    }
+  }
+
+  Future<Map<String, dynamic>> createGroup({
+    required String name,
+    required String description,
+    File? imageFile,
+  }) async {
+    try {
+      var uri = Uri.parse('$baseUrl/groups/create');
+      var request = http.MultipartRequest('POST', uri);
+
+      // Add form fields
+      request.fields['name'] = name;
+      request.fields['description'] = description;
+
+      // Add file if exists
+      if (imageFile != null && await imageFile.exists()) {
+        request.files.add(await http.MultipartFile.fromPath(
+          'file',
+          imageFile.path,
+        ));
+      }
+
+      // Send request
+      var streamedResponse = await request.send();
+      var responseBody = await streamedResponse.stream.bytesToString();
+
+      // Parse and handle response
+      if (streamedResponse.statusCode == 200 ||
+          streamedResponse.statusCode == 201) {
+        return json.decode(responseBody);
+      } else {
+        print(
+            'Failed to create group. Status code: ${streamedResponse.statusCode}');
+        print('Response body: $responseBody');
+        throw Exception('Failed to create group');
+      }
+    } catch (e) {
+      print('Error during group creation: $e');
+      throw Exception('Failed to create group: $e');
+    }
+  }
+
+  Future<bool> addUserToGroup(int userId, int groupId) async {
+    final uri = Uri.parse(
+      '$baseUrl/users/addToGroup?userId=$userId&groupId=$groupId',
+    );
+
+    final response = await http.post(uri);
+
+    if (response.statusCode == 200) {
+      print('User added to group successfully');
+      return true;
+    } else {
+      print('Failed to add user to group: ${response.statusCode}');
+      print('Response: ${response.body}');
+      return false;
+    }
+  }
+
+  Future<NotJoinedGroupModel> fetchNotJoinedGroupData(int userId) async {
+    try {
+      final response =
+          await http.get(Uri.parse('$baseUrl/groups/notjoined/user/$userId'));
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = json.decode(response.body);
+        return NotJoinedGroupModel.fromJson(data);
+      } else {
+        print('Failed to load group. Status code: ${response.statusCode}');
+        throw Exception('Failed to load group');
+      }
+    } catch (e) {
+      print('Error fetching group: $e');
+      throw Exception('Failed to load group: $e');
+    }
+  }
+
+  Future<List<GroupData>> fetchNotJoinedGroups(int userId) async {
+    final url = Uri.parse('$baseUrl/groups/notjoined/user/$userId');
+    final response = await http.get(url);
+
+    if (response.statusCode == 200) {
+      final List<dynamic> jsonList = json.decode(response.body);
+      return jsonList.map((item) => GroupData.fromJson(item)).toList();
+    } else {
+      print('Failed to load not-joined groups: ${response.statusCode}');
+      throw Exception('Failed to load not-joined groups');
     }
   }
 }

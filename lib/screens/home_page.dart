@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:studyfi/components/custom_poppins_text.dart';
 import 'package:studyfi/components/updates.dart';
 import 'package:studyfi/constants.dart';
-import 'package:studyfi/screens/academic/academic_page.dart';
 import 'package:studyfi/screens/groups/groups_page.dart';
-import 'package:studyfi/screens/groups/news_page.dart';
 import 'package:studyfi/screens/notifications_page.dart';
 import 'package:studyfi/screens/profile/profile_page.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:studyfi/services/api_service.dart';
+import 'package:studyfi/models/group_data_model.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -18,9 +19,8 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
 
-  // List of pages
   final List<Widget> _pages = [
-    HomeScreenContent(), // Separate widget for home content
+    HomeScreenContent(),
     GroupsPage(),
     ProfilePage()
   ];
@@ -35,46 +35,82 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      body: _pages[_selectedIndex], // Show the selected page
+      body: _pages[_selectedIndex],
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex, // Highlight selected tab
-        onTap: _onItemTapped, // Change page when tapped
-        selectedItemColor: Constants.dgreen, // Optional styling
+        currentIndex: _selectedIndex,
+        onTap: _onItemTapped,
+        selectedItemColor: Constants.dgreen,
         unselectedItemColor: Colors.black,
         items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.group),
-            label: 'Groups',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Profile',
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+          BottomNavigationBarItem(icon: Icon(Icons.group), label: 'Groups'),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
         ],
       ),
     );
   }
 }
 
-// Extracted Home Content to prevent infinite recursion
-class HomeScreenContent extends StatelessWidget {
+class HomeScreenContent extends StatefulWidget {
+  @override
+  _HomeScreenContentState createState() => _HomeScreenContentState();
+}
+
+class _HomeScreenContentState extends State<HomeScreenContent> {
+  List<GroupData> notJoinedGroups = [];
+  final ApiService apiService = ApiService();
+  String? profileImageUrl;
+
+  @override
+  void initState() {
+    super.initState();
+    loadUserData();
+    loadNotJoinedGroups();
+  }
+
+  int? userId;
+
+  Future<void> loadUserData() async {
+    final prefs = await SharedPreferences.getInstance();
+    profileImageUrl = prefs.getString('profileImageUrl');
+    print('Loaded profile image URL: $profileImageUrl');
+    setState(() {}); // Rebuild to reflect image
+  }
+
+  Future<void> loadNotJoinedGroups() async {
+    final prefs = await SharedPreferences.getInstance();
+    userId = prefs.getInt('userId'); // Store it
+    if (userId != null) {
+      try {
+        final groups = await apiService.fetchNotJoinedGroups(userId!);
+        setState(() {
+          notJoinedGroups = groups;
+        });
+      } catch (e) {
+        print("Error loading not-joined groups: $e");
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return SafeArea(
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(20.0),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // top profile and notification
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 CircleAvatar(
                   radius: 20.0,
-                  backgroundImage: AssetImage("assets/profile.jpg"),
+                  backgroundImage: (profileImageUrl != null &&
+                          profileImageUrl!.startsWith('http') &&
+                          profileImageUrl!.isNotEmpty)
+                      ? NetworkImage(profileImageUrl!)
+                      : const AssetImage("assets/profile.jpg") as ImageProvider,
                 ),
                 IconButton(
                   onPressed: () {
@@ -90,14 +126,11 @@ class HomeScreenContent extends StatelessWidget {
               ],
             ),
             SizedBox(height: 12),
-            Align(
-              alignment: Alignment.topLeft,
-              child: CustomPoppinsText(
-                text: "Welcome back Jane!",
-                fontSize: 24,
-                fontWeight: FontWeight.w700,
-                color: Colors.black,
-              ),
+            CustomPoppinsText(
+              text: "Welcome back Jane!",
+              fontSize: 24,
+              fontWeight: FontWeight.w700,
+              color: Colors.black,
             ),
             SizedBox(height: 30),
             Container(
@@ -111,34 +144,38 @@ class HomeScreenContent extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             CustomPoppinsText(
               text: "Connect, collaborate, and excel in your academic journey.",
               fontSize: 14,
               fontWeight: FontWeight.w500,
               color: Colors.black,
             ),
-            const SizedBox(height: 12),
-            const Updates(
-              imagePath: "assets/chemistry.jpg",
-              title: "Chemistry Wizards",
-              description:
-                  "Join our weekly Chemistry sessions to ace your exams!",
+
+            const SizedBox(height: 20),
+            CustomPoppinsText(
+              text: "Suggested Groups",
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: Colors.black,
             ),
             const SizedBox(height: 12),
-            const Updates(
-              imagePath: "assets/physics.jpg",
-              title: "Physics Essentials",
-              description:
-                  "Download the latest resources on physics to boost your understanding and excel in exams.",
-            ),
-            const SizedBox(height: 12),
-            const Updates(
-              imagePath: "assets/debate.jpg",
-              title: "Popular Debate",
-              description:
-                  "Engage in our latest debate on climate change policies!",
-            ),
+
+            if (notJoinedGroups.isEmpty)
+              Center(child: Text("You're in all available groups!"))
+            else
+              ...notJoinedGroups.map((group) => Updates(
+                    imagePath: group.imageUrl?.isNotEmpty == true
+                        ? group.imageUrl!
+                        : "assets/group_icon.jpg",
+                    title: group.name,
+                    description: group.description,
+                    groupId: group.id,
+                    userId: userId!,
+                    onJoinSuccess: () {
+                      loadNotJoinedGroups(); // Refresh after joining
+                    },
+                  )),
           ],
         ),
       ),
