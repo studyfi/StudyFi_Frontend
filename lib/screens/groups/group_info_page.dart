@@ -3,10 +3,12 @@ import 'package:studyfi/components/button.dart';
 import 'package:studyfi/components/button2.dart';
 import 'package:studyfi/components/custom_poppins_text.dart';
 import 'package:studyfi/constants.dart';
+import 'package:studyfi/models/group_count_model.dart';
 import 'package:studyfi/screens/groups/contents_page.dart';
 import 'package:studyfi/screens/groups/edit_group_info_page.dart';
 import 'package:studyfi/screens/groups/members_page.dart';
-import 'package:studyfi/screens/groups/news_page.dart';
+import 'package:studyfi/screens/news/news_page.dart';
+import 'package:studyfi/services/api_service.dart';
 
 class GroupInfoPage extends StatefulWidget {
   final String? imagePath;
@@ -27,6 +29,15 @@ class GroupInfoPage extends StatefulWidget {
 }
 
 class _GroupInfoPageState extends State<GroupInfoPage> {
+  late Future<GroupCountModel> _countFuture;
+  final ApiService _apiService = ApiService();
+
+  @override
+  void initState() {
+    super.initState();
+    _countFuture = _apiService.fetchGroupCounts(widget.groupId);
+  }
+
   void showAddGroupDialog() {
     showDialog(
       context: context,
@@ -97,18 +108,8 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
                   backgroundImage: widget.imagePath != null &&
                           widget.imagePath!.startsWith('http')
                       ? NetworkImage(widget.imagePath!)
-                      : AssetImage(widget.imagePath ?? 'assets/group_icon.jpg'),
-                  child: widget.imagePath != null &&
-                          widget.imagePath!.startsWith('http')
-                      ? null
-                      : ClipOval(
-                          child: Image.asset(
-                            widget.imagePath ?? 'assets/group_icon.jpg',
-                            fit: BoxFit.cover,
-                            width: 100,
-                            height: 100,
-                          ),
-                        ),
+                      : AssetImage(widget.imagePath ?? 'assets/group_icon.jpg')
+                          as ImageProvider,
                 ),
                 SizedBox(height: 12),
                 CustomPoppinsText(
@@ -125,119 +126,151 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
                   color: Colors.black,
                 ),
                 SizedBox(height: 20),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    GestureDetector(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => ContentsPage(
-                              groupId: widget.groupId,
-                              groupName: widget.title,
-                              groupImageUrl: widget.imagePath,
-                            ),
-                          ),
-                        );
-                      },
-                      child: Container(
-                        height: 170,
-                        width: 170,
-                        decoration: BoxDecoration(
-                          color: Constants.lgreen,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            CustomPoppinsText(
-                              text: "Contents",
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.black,
-                            ),
-                            CustomPoppinsText(
-                              text: "56",
-                              fontSize: 24,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.black,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    GestureDetector(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => NewsPage()),
-                        );
-                      },
-                      child: Container(
-                        height: 170,
-                        width: 170,
-                        decoration: BoxDecoration(
-                          color: Constants.lgreen,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            CustomPoppinsText(
-                              text: "News",
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.black,
-                            ),
-                            CustomPoppinsText(
-                              text: "56",
-                              fontSize: 24,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.black,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 12),
-                Align(
-                  alignment: Alignment.bottomLeft,
-                  child: GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => MembersPage()),
+                FutureBuilder<GroupCountModel>(
+                  future: _countFuture,
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return CircularProgressIndicator();
+                    } else if (snapshot.hasError || !snapshot.hasData) {
+                      return CustomPoppinsText(
+                        text: "Error loading group counts",
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.red,
                       );
-                    },
-                    child: Container(
-                      height: 170,
-                      width: 170,
-                      decoration: BoxDecoration(
-                        color: Constants.lgreen,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          CustomPoppinsText(
-                            text: "Members",
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.black,
+                    }
+
+                    final counts = snapshot.data!;
+                    return Column(
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            GestureDetector(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => ContentsPage(
+                                      groupId: widget.groupId,
+                                      groupName: widget.title,
+                                      groupImageUrl: widget.imagePath,
+                                    ),
+                                  ),
+                                );
+                              },
+                              child: Container(
+                                height: 170,
+                                width: 170,
+                                decoration: BoxDecoration(
+                                  color: Constants.lgreen,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    CustomPoppinsText(
+                                      text: "Contents",
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w500,
+                                      color: Colors.black,
+                                    ),
+                                    CustomPoppinsText(
+                                      text: "${counts.contentCount}",
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.black,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            GestureDetector(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => NewsPage(
+                                      groupId: widget.groupId,
+                                      groupName: widget.title,
+                                    ),
+                                  ),
+                                );
+                              },
+                              child: Container(
+                                height: 170,
+                                width: 170,
+                                decoration: BoxDecoration(
+                                  color: Constants.lgreen,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    CustomPoppinsText(
+                                      text: "News",
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w500,
+                                      color: Colors.black,
+                                    ),
+                                    CustomPoppinsText(
+                                      text: "${counts.newsCount}",
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.black,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 12),
+                        Align(
+                          alignment: Alignment.bottomLeft,
+                          child: GestureDetector(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => MembersPage(
+                                    groupId: widget.groupId,
+                                    groupName: widget.title,
+                                    groupImageUrl: widget.imagePath,
+                                  ),
+                                ),
+                              );
+                            },
+                            child: Container(
+                              height: 170,
+                              width: 170,
+                              decoration: BoxDecoration(
+                                color: Constants.lgreen,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  CustomPoppinsText(
+                                    text: "Members",
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.black,
+                                  ),
+                                  CustomPoppinsText(
+                                    text: "${counts.userCount}",
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.black,
+                                  ),
+                                ],
+                              ),
+                            ),
                           ),
-                          CustomPoppinsText(
-                            text: "56",
-                            fontSize: 24,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.black,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
+                        ),
+                      ],
+                    );
+                  },
                 ),
                 SizedBox(height: 80),
                 Align(

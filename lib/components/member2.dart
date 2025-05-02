@@ -26,7 +26,11 @@ class Member2 extends StatelessWidget {
         children: [
           CircleAvatar(
             radius: 30,
-            backgroundImage: AssetImage(imagePath),
+            backgroundImage:
+                (imagePath != null && imagePath!.startsWith('http'))
+                    ? NetworkImage(imagePath!)
+                    : AssetImage(imagePath ?? 'assets/default_profile.jpg')
+                        as ImageProvider,
           ),
           SizedBox(
             width: 20,
