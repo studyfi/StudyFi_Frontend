@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:studyfi/components/custom_poppins_text.dart';
 import 'package:studyfi/components/text_field.dart';
 import 'package:studyfi/constants.dart';
+import 'package:studyfi/screens/forgot_password_page.dart';
 import 'package:studyfi/screens/home_page.dart';
 import 'package:studyfi/screens/signup_page.dart';
 import 'package:studyfi/services/api_service.dart';
@@ -75,11 +76,20 @@ class _LoginPageState extends State<LoginPage> {
                 ),
                 Align(
                     alignment: Alignment.topRight,
-                    child: CustomPoppinsText(
-                        text: "Forget password?",
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: Constants.dgreen)),
+                    child: GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => ForgotPasswordPage()),
+                        );
+                      },
+                      child: CustomPoppinsText(
+                          text: "Forget password?",
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: Constants.dgreen),
+                    )),
                 SizedBox(
                   height: 30.0,
                 ),

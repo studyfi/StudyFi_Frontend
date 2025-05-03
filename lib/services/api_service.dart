@@ -517,4 +517,86 @@ class ApiService {
       throw Exception('Failed to fetch notifications: $e');
     }
   }
+
+  Future<Map<String, dynamic>> forgotPassword(String email) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/users/forgot-password'),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: json.encode({
+          'email': email,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final responseData = json.decode(response.body);
+        return {
+          'success': true,
+          'message': responseData['message'],
+          'verificationCode': responseData['verificationCode'],
+        };
+      } else {
+        return {
+          'success': false,
+          'message': 'Failed to send reset code. Please try again.',
+        };
+      }
+    } catch (e) {
+      print('Error during forgot password request: $e');
+      return {
+        'success': false,
+        'message': 'An error occurred. Please try again.',
+      };
+    }
+  }
+
+  Future<Map<String, dynamic>> resetPassword({
+    required String email,
+    required String verificationCode,
+    required String newPassword,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/users/reset-password'),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: json.encode({
+          'email': email,
+          'verificationCode': verificationCode,
+          'newPassword': newPassword,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        try {
+          final responseData = json.decode(response.body);
+          return {
+            'success': true,
+            'message': responseData['message'] ?? 'Password reset successful',
+          };
+        } catch (e) {
+          // If response is not JSON, just return it as plain text
+          return {
+            'success': true,
+            'message': response.body,
+          };
+        }
+      } else {
+        final responseData = json.decode(response.body);
+        return {
+          'success': false,
+          'message': responseData['message'] ?? 'Failed to reset password',
+        };
+      }
+    } catch (e) {
+      print('Error during password reset: $e');
+      return {
+        'success': false,
+        'message': 'An error occurred. Please try again.',
+      };
+    }
+  }
 }
