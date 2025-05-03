@@ -16,6 +16,7 @@ import 'dart:io';
 import 'package:studyfi/models/upload_content_model.dart';
 import 'package:studyfi/models/news_model.dart';
 import 'package:studyfi/models/create_news_model.dart';
+import 'package:studyfi/models/notification_model.dart';
 
 class ApiService {
   String baseUrl = "http://192.168.1.100:8080/api/v1";
@@ -493,6 +494,27 @@ class ApiService {
       return data.map((item) => UserData.fromJson(item)).toList();
     } else {
       throw Exception('Failed to fetch group members');
+    }
+  }
+
+  Future<List<NotificationModel>> fetchNotifications() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/notifications/getnotifications'),
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> jsonList = json.decode(response.body);
+        return jsonList
+            .map((json) => NotificationModel.fromJson(json))
+            .toList();
+      } else {
+        print('Failed to fetch notifications: ${response.statusCode}');
+        throw Exception('Failed to fetch notifications');
+      }
+    } catch (e) {
+      print('Error fetching notifications: $e');
+      throw Exception('Failed to fetch notifications: $e');
     }
   }
 }

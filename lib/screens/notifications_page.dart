@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:studyfi/components/custom_poppins_text.dart';
-import 'package:studyfi/components/notifications.dart';
 import 'package:studyfi/constants.dart';
+import 'package:studyfi/models/notification_model.dart';
+import 'package:studyfi/services/api_service.dart';
+import 'package:intl/intl.dart';
 
 class NotificationsPage extends StatefulWidget {
   const NotificationsPage({super.key});
@@ -11,38 +13,144 @@ class NotificationsPage extends StatefulWidget {
 }
 
 class _NotificationsPageState extends State<NotificationsPage> {
-  final List<String> items = List.generate(10, (index) => "Item ${index + 1}");
+  final ApiService _apiService = ApiService();
+  late Future<List<NotificationModel>> _notificationsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadNotifications();
+  }
+
+  void _loadNotifications() {
+    _notificationsFuture = _apiService.fetchNotifications();
+  }
+
+  String _formatTimestamp(String? timestamp) {
+    if (timestamp == null) return 'Just now';
+
+    try {
+      final dateTime = DateTime.parse(timestamp);
+      final now = DateTime.now();
+      final difference = now.difference(dateTime);
+
+      if (difference.inDays > 0) {
+        return '${difference.inDays}d ago';
+      } else if (difference.inHours > 0) {
+        return '${difference.inHours}h ago';
+      } else if (difference.inMinutes > 0) {
+        return '${difference.inMinutes}m ago';
+      } else {
+        return 'Just now';
+      }
+    } catch (e) {
+      return 'Just now';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
       appBar: AppBar(
+        title: const CustomPoppinsText(
+          text: 'Notifications',
+          fontSize: 20,
+          fontWeight: FontWeight.w600,
+          color: Colors.black,
+        ),
         backgroundColor: Colors.white,
-        title: Row(
-          children: [
-            Icon(
-              Icons.notifications,
-              color: Constants.dgreen,
-            ),
-            SizedBox(width: 8),
-            CustomPoppinsText(
-                text: "Notifications",
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: Colors.black)
-          ],
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: ListView.builder(
-        itemCount: items.length, // Number of items
-        padding: EdgeInsets.all(10),
-        itemBuilder: (context, index) {
-          return Notifications(
-              imagePath: "assets/notifications.jpg",
-              title: "New study material added in Physics group.",
-              date: "05/09/2023");
+      body: RefreshIndicator(
+        onRefresh: () async {
+          setState(() {
+            _loadNotifications();
+          });
         },
+        child: FutureBuilder<List<NotificationModel>>(
+          future: _notificationsFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+
+            if (snapshot.hasError) {
+              return Center(
+                child: CustomPoppinsText(
+                  text: 'Error loading notifications: ${snapshot.error}',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w400,
+                  color: Colors.red,
+                ),
+              );
+            }
+
+            if (!snapshot.hasData || snapshot.data!.isEmpty) {
+              return const Center(
+                child: CustomPoppinsText(
+                  text: 'No notifications',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w400,
+                  color: Colors.grey,
+                ),
+              );
+            }
+
+            return ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: snapshot.data!.length,
+              itemBuilder: (context, index) {
+                final notification = snapshot.data![index];
+                return Card(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  color: notification.read ? Colors.white : Colors.grey[50],
+                  child: ListTile(
+                    contentPadding: const EdgeInsets.all(16),
+                    title: CustomPoppinsText(
+                      text: notification.message,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.black,
+                    ),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 4),
+                        if (notification.groupName != null)
+                          CustomPoppinsText(
+                            text: notification.groupName!,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w400,
+                            color: Constants.dgreen,
+                          ),
+                        const SizedBox(height: 4),
+                        CustomPoppinsText(
+                          text: _formatTimestamp(notification.timestamp),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w400,
+                          color: Colors.grey[600] ?? Colors.grey,
+                        ),
+                      ],
+                    ),
+                    leading: CircleAvatar(
+                      backgroundColor: Constants.lgreen,
+                      child: Icon(
+                        notification.message.contains('news')
+                            ? Icons.newspaper
+                            : Icons.article,
+                        color: Constants.dgreen,
+                      ),
+                    ),
+                  ),
+                );
+              },
+            );
+          },
+        ),
       ),
     );
   }
