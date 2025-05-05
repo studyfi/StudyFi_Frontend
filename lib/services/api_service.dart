@@ -578,18 +578,24 @@ class ApiService {
             'message': responseData['message'] ?? 'Password reset successful',
           };
         } catch (e) {
-          // If response is not JSON, just return it as plain text
           return {
             'success': true,
-            'message': response.body,
+            'message': response.body, // fallback to plain text
           };
         }
       } else {
-        final responseData = json.decode(response.body);
-        return {
-          'success': false,
-          'message': responseData['message'] ?? 'Failed to reset password',
-        };
+        try {
+          final responseData = json.decode(response.body);
+          return {
+            'success': false,
+            'message': responseData['message'] ?? 'Failed to reset password',
+          };
+        } catch (e) {
+          return {
+            'success': false,
+            'message': response.body, // fallback for non-JSON errors too
+          };
+        }
       }
     } catch (e) {
       print('Error during password reset: $e');
@@ -597,6 +603,26 @@ class ApiService {
         'success': false,
         'message': 'An error occurred. Please try again.',
       };
+    }
+  }
+
+  Future<bool> leaveGroup(int groupId, int userId) async {
+    try {
+      final response = await http.delete(
+        Uri.parse('$baseUrl/groups/remove/$groupId/user/$userId'),
+      );
+
+      if (response.statusCode == 200) {
+        print('Successfully left the group');
+        return true;
+      } else {
+        print('Failed to leave group: ${response.statusCode}');
+        print('Response: ${response.body}');
+        return false;
+      }
+    } catch (e) {
+      print('Error leaving group: $e');
+      return false;
     }
   }
 }

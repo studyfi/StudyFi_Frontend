@@ -9,6 +9,7 @@ import 'package:studyfi/screens/groups/edit_group_info_page.dart';
 import 'package:studyfi/screens/groups/members_page.dart';
 import 'package:studyfi/screens/news/news_page.dart';
 import 'package:studyfi/services/api_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class GroupInfoPage extends StatefulWidget {
   final String? imagePath;
@@ -30,15 +31,25 @@ class GroupInfoPage extends StatefulWidget {
 
 class _GroupInfoPageState extends State<GroupInfoPage> {
   late Future<GroupCountModel> _countFuture;
-  final ApiService _apiService = ApiService();
+  ApiService service = ApiService();
 
   @override
   void initState() {
     super.initState();
-    _countFuture = _apiService.fetchGroupCounts(widget.groupId);
+    _countFuture = service.fetchGroupCounts(widget.groupId);
   }
 
-  void showAddGroupDialog() {
+  void showAddGroupDialog() async {
+    final prefs = await SharedPreferences.getInstance();
+    final userId = prefs.getInt('userId');
+
+    if (userId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('User ID not found. Please try again.')),
+      );
+      return;
+    }
+
     showDialog(
       context: context,
       builder: (context) {
@@ -51,8 +62,23 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
               child: Text("Cancel"),
             ),
             ElevatedButton(
-              onPressed: () {
+              onPressed: () async {
                 Navigator.of(context).pop();
+                final success =
+                    await service.leaveGroup(widget.groupId, userId);
+
+                if (success) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Successfully left the group')),
+                  );
+                  Navigator.of(context).pop(); // Return to previous screen
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                        content: Text(
+                            'Failed to leave the group. Please try again.')),
+                  );
+                }
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Constants.dgreen,
