@@ -19,13 +19,13 @@ class NotificationModel {
 
   factory NotificationModel.fromJson(Map<String, dynamic> json) {
     return NotificationModel(
-      id: json['id'],
-      message: json['message'],
-      read: json['read'],
-      timestamp: json['timestamp'],
-      userId: json['userId'],
-      groupId: json['groupId'],
-      groupName: json['groupName'],
+      id: json['id'] as int,
+      message: json['message'] as String,
+      read: json['read'] as bool,
+      timestamp: json['timestamp'] as String?,
+      userId: json['userId'] as int,
+      groupId: json['groupId'] as int?,
+      groupName: json['groupName'] as String?,
     );
   }
 }

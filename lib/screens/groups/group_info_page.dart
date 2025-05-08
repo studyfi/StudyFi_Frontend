@@ -7,7 +7,7 @@ import 'package:studyfi/models/group_count_model.dart';
 import 'package:studyfi/screens/groups/contents_page.dart';
 import 'package:studyfi/screens/groups/edit_group_info_page.dart';
 import 'package:studyfi/screens/groups/members_page.dart';
-import 'package:studyfi/screens/news/news_page.dart';
+import 'package:studyfi/screens/groups/news_page.dart';
 import 'package:studyfi/services/api_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -109,7 +109,13 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
               if (result == 'Edit group info') {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => EditGroupInfoPage()),
+                  MaterialPageRoute(
+                      builder: (context) => EditGroupInfoPage(
+                            groupId: widget.groupId,
+                            initialDescription: widget.description,
+                            initialName: widget.title,
+                            initialImagePath: widget.imagePath,
+                          )),
                 );
               }
             },

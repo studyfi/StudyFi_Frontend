@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:studyfi/models/group_content_model.dart';
 import 'package:studyfi/models/group_count_model.dart';
 import 'package:studyfi/models/group_data_model.dart';
+import 'package:studyfi/models/group_update_model.dart';
 import 'package:studyfi/models/not_joined_group_model.dart';
 import 'package:studyfi/models/profile_edit_model.dart';
 import 'package:studyfi/models/signup_model.dart';
@@ -497,15 +498,24 @@ class ApiService {
     }
   }
 
-  Future<List<NotificationModel>> fetchNotifications() async {
+  Future<List<NotificationModel>> fetchNotifications(int userId) async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/notifications/getnotifications'),
+        Uri.parse('$baseUrl/notifications/getnotifications/$userId'),
       );
 
       if (response.statusCode == 200) {
-        final List<dynamic> jsonList = json.decode(response.body);
-        return jsonList
+        final Map<String, dynamic> jsonResponse = json.decode(response.body);
+        final List<dynamic> unreadNotifications =
+            jsonResponse['unreadNotifications'] ?? [];
+        final List<dynamic> readNotifications =
+            jsonResponse['readNotifications'] ?? [];
+        final List<dynamic> allNotifications = [
+          ...unreadNotifications,
+          ...readNotifications
+        ];
+
+        return allNotifications
             .map((json) => NotificationModel.fromJson(json))
             .toList();
       } else {
@@ -622,6 +632,61 @@ class ApiService {
       }
     } catch (e) {
       print('Error leaving group: $e');
+      return false;
+    }
+  }
+
+  Future<bool> markNotificationAsRead(int userId) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/notifications/markallasread/$userId'),
+      );
+
+      if (response.statusCode == 200) {
+        print('Successfully marked all notifications as read');
+        return true;
+      } else {
+        print(
+            'Failed to mark all notifications as read: ${response.statusCode}');
+        print('Response: ${response.body}');
+        return false;
+      }
+    } catch (e) {
+      print('Error marking notification as read: $e');
+      return false;
+    }
+  }
+
+  Future<bool> updateGroupInfo(int groupId, GroupUpdateModel model) async {
+    try {
+      var uri = Uri.parse('$baseUrl/groups/update/$groupId');
+      var request = http.MultipartRequest('PUT', uri);
+
+      request.fields['name'] = model.name;
+      request.fields['description'] = model.description;
+
+      if (model.imageFilePath != null) {
+        final file = File(model.imageFilePath!);
+        if (await file.exists()) {
+          request.files.add(await http.MultipartFile.fromPath(
+            'file',
+            model.imageFilePath!,
+          ));
+        }
+      }
+
+      var response = await request.send();
+      var responseBody = await response.stream.bytesToString();
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return true;
+      } else {
+        print('Failed to update group: ${response.statusCode}');
+        print('Response: $responseBody');
+        return false;
+      }
+    } catch (e) {
+      print('Error updating group: $e');
       return false;
     }
   }

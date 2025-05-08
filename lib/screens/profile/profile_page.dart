@@ -17,11 +17,12 @@ class ProfilePage extends StatefulWidget {
 class _ProfilePageState extends State<ProfilePage> {
   late Future<UserData> _futureUserData;
   final ApiService service = ApiService();
+  final GlobalKey<RefreshIndicatorState> _refreshIndicatorKey =
+      GlobalKey<RefreshIndicatorState>();
 
   @override
   void initState() {
     super.initState();
-    // Initialize _futureUserData with a default Future
     _futureUserData = _loadUserData();
   }
 
@@ -32,9 +33,14 @@ class _ProfilePageState extends State<ProfilePage> {
     if (userId != -1) {
       return service.fetchUserData(userId);
     } else {
-      // Throw an error or return a fallback value
       throw Exception("User ID not found in SharedPreferences.");
     }
+  }
+
+  Future<void> _refreshUserData() async {
+    setState(() {
+      _futureUserData = _loadUserData();
+    });
   }
 
   void showLogoutDialog() {
@@ -42,12 +48,15 @@ class _ProfilePageState extends State<ProfilePage> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text("Confirm Logout"),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+          title: const Text("Confirm Logout",
+              style: TextStyle(fontWeight: FontWeight.bold)),
           content: const Text("Are you sure you want to logout?"),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text("Cancel"),
+              child: Text("Cancel", style: TextStyle(color: Constants.dgreen)),
             ),
             ElevatedButton(
               onPressed: () {
@@ -56,6 +65,9 @@ class _ProfilePageState extends State<ProfilePage> {
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Constants.dgreen,
+                elevation: 2,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8)),
               ),
               child:
                   const Text("Logout", style: TextStyle(color: Colors.white)),
@@ -69,139 +81,339 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Colors.grey[50],
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withOpacity(0.1),
+                  spreadRadius: 1,
+                  blurRadius: 2,
+                  offset: const Offset(0, 1),
+                ),
+              ],
+            ),
+            child: const Icon(
+              Icons.arrow_back,
+            ),
+          ),
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const HomePage()),
+            );
+          },
+        ),
+        actions: [
+          PopupMenuButton<String>(
+            icon: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withOpacity(0.1),
+                    spreadRadius: 1,
+                    blurRadius: 2,
+                    offset: const Offset(0, 1),
+                  ),
+                ],
+              ),
+              child: const Icon(
+                Icons.more_vert,
+              ),
+            ),
+            onSelected: (value) {
+              if (value == 'edit profile') {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => const EditProfilePage()),
+                );
+              } else if (value == 'logout') {
+                showLogoutDialog();
+              }
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'edit profile',
+                child: Row(
+                  children: [
+                    Icon(Icons.edit, size: 18),
+                    SizedBox(width: 8),
+                    Text('Edit Profile'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'logout',
+                child: Row(
+                  children: [
+                    Icon(Icons.logout, size: 18),
+                    SizedBox(width: 8),
+                    Text('Logout'),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(width: 12),
+        ],
+      ),
       body: SafeArea(
-        child: FutureBuilder<UserData>(
-          future: _futureUserData,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
-            } else if (snapshot.hasError) {
-              return Center(child: Text("Error: ${snapshot.error}"));
-            } else if (!snapshot.hasData) {
-              return const Center(child: Text("No user data available"));
-            }
-
-            final user = snapshot.data!;
-
-            return SingleChildScrollView(
-              padding: const EdgeInsets.all(13.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        child: RefreshIndicator(
+          key: _refreshIndicatorKey,
+          onRefresh: _refreshUserData,
+          color: Constants.dgreen,
+          child: FutureBuilder<UserData>(
+            future: _futureUserData,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(
+                  child: CircularProgressIndicator(color: Constants.dgreen),
+                );
+              } else if (snapshot.hasError) {
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      IconButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) => const HomePage()),
-                          );
-                        },
-                        icon: const Icon(Icons.arrow_back),
+                      const Icon(Icons.error_outline,
+                          size: 60, color: Colors.red),
+                      const SizedBox(height: 16),
+                      Text(
+                        "Error loading profile",
+                        style: TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.bold),
                       ),
-                      PopupMenuButton<String>(
-                        icon: const Icon(Icons.more_vert),
-                        onSelected: (value) {
-                          if (value == 'edit profile') {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) =>
-                                      const EditProfilePage()),
-                            );
-                          } else if (value == 'logout') {
-                            showLogoutDialog();
-                          }
-                        },
-                        itemBuilder: (context) => [
-                          const PopupMenuItem(
-                              value: 'edit profile',
-                              child: Text('Edit Profile')),
-                          const PopupMenuItem(
-                              value: 'change password',
-                              child: Text('Change Password')),
-                          const PopupMenuItem(
-                              value: 'logout', child: Text('Logout')),
-                        ],
+                      const SizedBox(height: 8),
+                      Text(
+                        "${snapshot.error}",
+                        style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 24),
+                      ElevatedButton(
+                        onPressed: _refreshUserData,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Constants.dgreen,
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8)),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 24, vertical: 12),
+                        ),
+                        child: const Text("Try Again",
+                            style: TextStyle(color: Colors.white)),
                       ),
                     ],
                   ),
-                  Align(
-                    alignment: Alignment.center,
-                    child: CircleAvatar(
-                      radius: 60,
-                      backgroundImage: user.profileImageUrl != null &&
-                              user.profileImageUrl!.isNotEmpty
-                          ? NetworkImage(user.profileImageUrl!)
-                          : const AssetImage("assets/profile.jpg"),
-                      onBackgroundImageError: (error, stackTrace) =>
-                          const Icon(Icons.person, size: 60),
+                );
+              } else if (!snapshot.hasData) {
+                return const Center(child: Text("No user data available"));
+              }
+
+              final user = snapshot.data!;
+
+              return SingleChildScrollView(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Profile Header
+                    Center(
+                      child: Column(
+                        children: [
+                          Container(
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.grey.withOpacity(0.3),
+                                  spreadRadius: 2,
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 3),
+                                ),
+                              ],
+                            ),
+                            child: CircleAvatar(
+                              radius: 70,
+                              backgroundColor: Colors.white,
+                              child: CircleAvatar(
+                                radius: 67,
+                                backgroundImage: user.profileImageUrl != null &&
+                                        user.profileImageUrl!.isNotEmpty
+                                    ? NetworkImage(user.profileImageUrl!)
+                                    : const AssetImage("assets/profile.jpg")
+                                        as ImageProvider,
+                                onBackgroundImageError: (error, stackTrace) =>
+                                    const Icon(Icons.person, size: 60),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            user.name,
+                            style: const TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: Constants.dgreen,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            user.email,
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 16,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 20),
-                  buildInfoRow("Name:", user.name),
-                  buildInfoRow("Email:", user.email),
-                  buildInfoRow("Phone:", user.phoneContact),
-                  buildInfoRow("Date of birth:", user.birthDate),
-                  buildInfoRow("Country:", user.country),
-                  buildMultilineInfo("About:", user.aboutMe),
-                  buildMultilineInfo("Address:", user.currentAddress),
-                ],
-              ),
-            );
-          },
+
+                    const SizedBox(height: 32),
+
+                    // Profile Information
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.grey.withOpacity(0.1),
+                            spreadRadius: 1,
+                            blurRadius: 10,
+                            offset: const Offset(0, 1),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            "Personal Information",
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Constants.dgreen,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          buildInfoItem(
+                              Icons.phone, "Phone", user.phoneContact),
+                          buildInfoItem(
+                              Icons.cake, "Date of birth", user.birthDate),
+                          buildInfoItem(
+                              Icons.location_on, "Country", user.country),
+                          buildInfoItem(
+                              Icons.home, "Address", user.currentAddress),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // About Me Section
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.grey.withOpacity(0.1),
+                            spreadRadius: 1,
+                            blurRadius: 10,
+                            offset: const Offset(0, 1),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            "About Me",
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Constants.dgreen,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            user.aboutMe,
+                            style: const TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 16,
+                              height: 1.5,
+                              color: Colors.black87,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 32),
+                  ],
+                ),
+              );
+            },
+          ),
         ),
       ),
     );
   }
 
-  Widget buildInfoRow(String label, String value) {
+  Widget buildInfoItem(IconData icon, String label, String value) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6.0),
-      child: Row(
-        children: [
-          CustomPoppinsText(
-            text: label,
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: Colors.black,
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: CustomPoppinsText(
-              text: value,
-              fontSize: 18,
-              fontWeight: FontWeight.w400,
-              color: Colors.black,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget buildMultilineInfo(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6.0),
+      padding: const EdgeInsets.symmetric(vertical: 12.0),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CustomPoppinsText(
-            text: label,
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: Colors.black,
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: Constants.dgreen.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: Constants.dgreen, size: 22),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 16),
           Expanded(
-            child: CustomPoppinsText(
-              text: value,
-              fontSize: 18,
-              fontWeight: FontWeight.w400,
-              color: Colors.black,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 14,
+                    color: Colors.grey[600],
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.black87,
+                  ),
+                ),
+              ],
             ),
           ),
         ],

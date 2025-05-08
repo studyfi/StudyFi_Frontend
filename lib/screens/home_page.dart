@@ -8,6 +8,7 @@ import 'package:studyfi/screens/profile/profile_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:studyfi/services/api_service.dart';
 import 'package:studyfi/models/group_data_model.dart';
+import 'package:studyfi/models/notification_model.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -16,8 +17,10 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   int _selectedIndex = 0;
+  int _unreadNotificationsCount = 0;
+  final ApiService _apiService = ApiService();
 
   final List<Widget> _pages = [
     HomeScreenContent(),
@@ -25,14 +28,89 @@ class _HomePageState extends State<HomePage> {
     ProfilePage()
   ];
 
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    // Fetch notifications count when home page is first loaded
+    _fetchUnreadNotificationsCount();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Refresh notifications when app resumes
+    if (state == AppLifecycleState.resumed) {
+      _fetchUnreadNotificationsCount();
+    }
+  }
+
+  Future<void> _fetchUnreadNotificationsCount() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getInt('userId');
+
+      if (userId != null) {
+        final notifications = await _apiService.fetchNotifications(userId);
+        final unreadCount =
+            notifications.where((notification) => !notification.read).length;
+
+        setState(() {
+          _unreadNotificationsCount = unreadCount;
+        });
+      } else {
+        print('User ID not found in SharedPreferences');
+      }
+    } catch (e) {
+      print('Error fetching unread notifications count: $e');
+    }
+  }
+
   void _onItemTapped(int index) {
     setState(() {
+      // If coming back to home tab, refresh notifications
+      if (_selectedIndex != 0 && index == 0) {
+        _fetchUnreadNotificationsCount();
+      }
       _selectedIndex = index;
     });
   }
 
+  void _navigateToNotifications(BuildContext context) async {
+    final prefs = await SharedPreferences.getInstance();
+    final userId = prefs.getInt('userId');
+
+    if (userId != null) {
+      // Navigate to notifications page with userId
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => NotificationsPage(userId: userId),
+        ),
+      );
+
+      // After returning from notifications page, refresh the count
+      _fetchUnreadNotificationsCount();
+    } else {
+      print('User ID not found in SharedPreferences');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Pass the notification count and navigation callback to HomeScreenContent
+    if (_pages[0] is HomeScreenContent) {
+      _pages[0] = HomeScreenContent(
+        unreadNotificationsCount: _unreadNotificationsCount,
+        onNotificationTap: _navigateToNotifications,
+      );
+    }
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: _pages[_selectedIndex],
@@ -52,6 +130,15 @@ class _HomePageState extends State<HomePage> {
 }
 
 class HomeScreenContent extends StatefulWidget {
+  final int unreadNotificationsCount;
+  final Function(BuildContext)? onNotificationTap;
+
+  const HomeScreenContent({
+    Key? key,
+    this.unreadNotificationsCount = 0,
+    this.onNotificationTap,
+  }) : super(key: key);
+
   @override
   _HomeScreenContentState createState() => _HomeScreenContentState();
 }
@@ -100,7 +187,7 @@ class _HomeScreenContentState extends State<HomeScreenContent> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // top profile and notification
+            // top profile and notification with badge
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -112,17 +199,46 @@ class _HomeScreenContentState extends State<HomeScreenContent> {
                       ? NetworkImage(profileImageUrl!)
                       : const AssetImage("assets/profile.jpg") as ImageProvider,
                 ),
-                IconButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => NotificationsPage()),
-                    );
-                  },
-                  icon: Icon(Icons.notifications),
-                  iconSize: 30,
-                )
+                Stack(
+                  children: [
+                    IconButton(
+                      onPressed: () {
+                        if (widget.onNotificationTap != null) {
+                          widget.onNotificationTap!(context);
+                        }
+                      },
+                      icon: Icon(Icons.notifications),
+                      iconSize: 30,
+                    ),
+                    if (widget.unreadNotificationsCount > 0)
+                      Positioned(
+                        right: 8,
+                        top: 8,
+                        child: Container(
+                          padding: EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: Colors.red,
+                            shape: BoxShape.circle,
+                          ),
+                          constraints: BoxConstraints(
+                            minWidth: 16,
+                            minHeight: 16,
+                          ),
+                          child: Text(
+                            widget.unreadNotificationsCount > 9
+                                ? '9+'
+                                : widget.unreadNotificationsCount.toString(),
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
               ],
             ),
             SizedBox(height: 12),

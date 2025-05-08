@@ -6,7 +6,9 @@ import 'package:studyfi/services/api_service.dart';
 import 'package:intl/intl.dart';
 
 class NotificationsPage extends StatefulWidget {
-  const NotificationsPage({super.key});
+  final int userId;
+
+  const NotificationsPage({super.key, required this.userId});
 
   @override
   State<NotificationsPage> createState() => _NotificationsPageState();
@@ -15,6 +17,8 @@ class NotificationsPage extends StatefulWidget {
 class _NotificationsPageState extends State<NotificationsPage> {
   final ApiService _apiService = ApiService();
   late Future<List<NotificationModel>> _notificationsFuture;
+  List<NotificationModel> _notifications = [];
+  bool _isLoading = true;
 
   @override
   void initState() {
@@ -22,8 +26,29 @@ class _NotificationsPageState extends State<NotificationsPage> {
     _loadNotifications();
   }
 
-  void _loadNotifications() {
-    _notificationsFuture = _apiService.fetchNotifications();
+  Future<void> _loadNotifications() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      _notifications = await _apiService.fetchNotifications(widget.userId);
+
+      // Mark notifications as read when the page is opened
+      // Here we should make an API call to mark them as read
+      for (var notification in _notifications.where((n) => !n.read)) {
+        await _apiService.markNotificationAsRead(widget.userId);
+      }
+
+      setState(() {
+        _isLoading = false;
+      });
+    } catch (e) {
+      print("Error loading notifications: $e");
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   String _formatTimestamp(String? timestamp) {
@@ -67,90 +92,70 @@ class _NotificationsPageState extends State<NotificationsPage> {
       ),
       body: RefreshIndicator(
         onRefresh: () async {
-          setState(() {
-            _loadNotifications();
-          });
+          await _loadNotifications();
         },
-        child: FutureBuilder<List<NotificationModel>>(
-          future: _notificationsFuture,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
-            }
-
-            if (snapshot.hasError) {
-              return Center(
-                child: CustomPoppinsText(
-                  text: 'Error loading notifications: ${snapshot.error}',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w400,
-                  color: Colors.red,
-                ),
-              );
-            }
-
-            if (!snapshot.hasData || snapshot.data!.isEmpty) {
-              return const Center(
-                child: CustomPoppinsText(
-                  text: 'No notifications',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w400,
-                  color: Colors.grey,
-                ),
-              );
-            }
-
-            return ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: snapshot.data!.length,
-              itemBuilder: (context, index) {
-                final notification = snapshot.data![index];
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  color: notification.read ? Colors.white : Colors.grey[50],
-                  child: ListTile(
-                    contentPadding: const EdgeInsets.all(16),
-                    title: CustomPoppinsText(
-                      text: notification.message,
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : _notifications.isEmpty
+                ? const Center(
+                    child: CustomPoppinsText(
+                      text: 'No notifications',
                       fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.black,
+                      fontWeight: FontWeight.w400,
+                      color: Colors.grey,
                     ),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const SizedBox(height: 4),
-                        if (notification.groupName != null)
-                          CustomPoppinsText(
-                            text: notification.groupName!,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w400,
-                            color: Constants.dgreen,
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: _notifications.length,
+                    itemBuilder: (context, index) {
+                      final notification = _notifications[index];
+                      return Card(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        color: Colors.white,
+                        child: ListTile(
+                          contentPadding: const EdgeInsets.all(16),
+                          title: CustomPoppinsText(
+                            text: notification.message,
+                            fontSize: 16,
+                            fontWeight: notification.read
+                                ? FontWeight.w400
+                                : FontWeight.w600,
+                            color: Colors.black,
                           ),
-                        const SizedBox(height: 4),
-                        CustomPoppinsText(
-                          text: _formatTimestamp(notification.timestamp),
-                          fontSize: 12,
-                          fontWeight: FontWeight.w400,
-                          color: Colors.grey[600] ?? Colors.grey,
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const SizedBox(height: 4),
+                              if (notification.groupName != null)
+                                CustomPoppinsText(
+                                  text: notification.groupName!,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w400,
+                                  color: Constants.dgreen,
+                                ),
+                              const SizedBox(height: 4),
+                              CustomPoppinsText(
+                                text: _formatTimestamp(notification.timestamp),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w400,
+                                color: Colors.grey[600] ?? Colors.grey,
+                              ),
+                            ],
+                          ),
+                          leading: CircleAvatar(
+                            backgroundColor: Constants.lgreen,
+                            child: Icon(
+                              notification.message.contains('news')
+                                  ? Icons.newspaper
+                                  : Icons.article,
+                              color: Constants.dgreen,
+                            ),
+                          ),
                         ),
-                      ],
-                    ),
-                    leading: CircleAvatar(
-                      backgroundColor: Constants.lgreen,
-                      child: Icon(
-                        notification.message.contains('news')
-                            ? Icons.newspaper
-                            : Icons.article,
-                        color: Constants.dgreen,
-                      ),
-                    ),
+                      );
+                    },
                   ),
-                );
-              },
-            );
-          },
-        ),
       ),
     );
   }
