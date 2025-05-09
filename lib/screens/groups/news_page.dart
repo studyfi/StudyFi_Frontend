@@ -30,6 +30,7 @@ class _NewsPageState extends State<NewsPage> {
   String? _authorName;
   File? _selectedImage;
   final _picker = ImagePicker();
+  bool _isUploadingNews = false; // Added to track the news posting state
 
   @override
   void initState() {
@@ -51,11 +52,26 @@ class _NewsPageState extends State<NewsPage> {
     if (userId != null) {
       try {
         final userData = await _apiService.fetchUserData(userId);
-        setState(() {
-          _authorName = userData.name;
-        });
+        if (mounted) {
+          setState(() {
+            _authorName = userData.name;
+          });
+        }
       } catch (e) {
         print('Error loading user data: $e');
+        // If we couldn't load the author name, set a default
+        if (mounted) {
+          setState(() {
+            _authorName = "Anonymous"; // Default fallback name
+          });
+        }
+      }
+    } else {
+      // If no userId found, set a default author name
+      if (mounted) {
+        setState(() {
+          _authorName = "Anonymous"; // Default fallback name
+        });
       }
     }
   }
@@ -65,21 +81,25 @@ class _NewsPageState extends State<NewsPage> {
   }
 
   Future<void> _showAddPhotoDialog(BuildContext context) async {
+    // Ensure author name is available
     if (_authorName == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please wait while loading user data...')),
-      );
-      return;
+      await _loadAuthorName(); // Try loading again
+      if (_authorName == null) {
+        // If still null, use a default value
+        _authorName = "Anonymous";
+      }
     }
 
-    // Reset image when opening dialog
+    // Reset controllers and image when opening dialog
+    _headlineController.clear();
+    _contentController.clear();
     setState(() {
       _selectedImage = null;
     });
 
     return showDialog(
       context: context,
-      builder: (context) {
+      builder: (dialogContext) {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             // Function to pick image inside the dialog
@@ -91,9 +111,11 @@ class _NewsPageState extends State<NewsPage> {
                 setDialogState(() {
                   _selectedImage = File(pickedFile.path);
                 });
-                setState(() {
-                  _selectedImage = File(pickedFile.path);
-                });
+                if (mounted) {
+                  setState(() {
+                    _selectedImage = File(pickedFile.path);
+                  });
+                }
               }
             }
 
@@ -153,12 +175,7 @@ class _NewsPageState extends State<NewsPage> {
               actions: [
                 TextButton(
                   onPressed: () {
-                    Navigator.pop(context);
-                    _headlineController.clear();
-                    _contentController.clear();
-                    setState(() {
-                      _selectedImage = null;
-                    });
+                    Navigator.pop(dialogContext);
                   },
                   child: const Text('Cancel'),
                 ),
@@ -173,33 +190,57 @@ class _NewsPageState extends State<NewsPage> {
                       return;
                     }
 
-                    final success = await _apiService.createNewsPost(
-                      CreateNewsModel(
-                        headline: _headlineController.text,
-                        content: _contentController.text,
-                        author: _authorName!,
-                        groupIds: [widget.groupId],
-                        imageFile: _selectedImage,
-                      ),
-                    );
+                    // Validate author name one more time before posting
+                    final authorToUse = _authorName ?? "Anonymous";
 
-                    if (success) {
-                      Navigator.pop(context);
-                      _headlineController.clear();
-                      _contentController.clear();
+                    // First close the dialog
+                    Navigator.pop(dialogContext);
+
+                    // Then set loading state
+                    if (mounted) {
                       setState(() {
-                        _selectedImage = null;
-                        _loadNews();
+                        _isUploadingNews = true;
                       });
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                            content: Text('News post created successfully')),
+                    }
+
+                    try {
+                      final success = await _apiService.createNewsPost(
+                        CreateNewsModel(
+                          headline: _headlineController.text,
+                          content: _contentController.text,
+                          author: authorToUse,
+                          groupIds: [widget.groupId],
+                          imageFile: _selectedImage,
+                        ),
                       );
-                    } else {
+
+                      if (!mounted) return;
+
+                      if (success) {
+                        setState(() {
+                          _loadNews();
+                        });
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                              content: Text('News post created successfully')),
+                        );
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                              content: Text('Failed to create news post')),
+                        );
+                      }
+                    } catch (e) {
+                      if (!mounted) return;
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                            content: Text('Failed to create news post')),
+                        SnackBar(content: Text('Error creating news post: $e')),
                       );
+                    } finally {
+                      if (mounted) {
+                        setState(() {
+                          _isUploadingNews = false;
+                        });
+                      }
                     }
                   },
                   style: ElevatedButton.styleFrom(
@@ -278,26 +319,21 @@ class _NewsPageState extends State<NewsPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      if (news.imageUrl.isNotEmpty)
+                      if ((news.imageUrl?.trim().isNotEmpty ?? false) &&
+                          news.imageUrl?.toLowerCase() != 'null' &&
+                          Uri.tryParse(news.imageUrl ?? '')?.hasAbsolutePath ==
+                              true)
                         ClipRRect(
                           borderRadius: const BorderRadius.vertical(
                             top: Radius.circular(8),
                           ),
                           child: Image.network(
-                            news.imageUrl,
+                            news.imageUrl ?? '',
                             height: 200,
                             width: double.infinity,
                             fit: BoxFit.cover,
                             errorBuilder: (context, error, stackTrace) {
-                              return Container(
-                                height: 200,
-                                color: Colors.grey[300],
-                                child: const Icon(
-                                  Icons.error_outline,
-                                  size: 50,
-                                  color: Colors.grey,
-                                ),
-                              );
+                              return Container(); // fallback if image load fails
                             },
                           ),
                         ),
@@ -338,10 +374,12 @@ class _NewsPageState extends State<NewsPage> {
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => _showAddPhotoDialog(context),
+        onPressed: _isUploadingNews ? null : () => _showAddPhotoDialog(context),
         backgroundColor: Constants.dgreen,
         shape: const CircleBorder(),
-        child: const Icon(Icons.add, color: Colors.white),
+        child: _isUploadingNews
+            ? const CircularProgressIndicator(color: Colors.white)
+            : const Icon(Icons.add, color: Colors.white),
       ),
     );
   }

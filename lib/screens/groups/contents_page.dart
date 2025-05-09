@@ -7,6 +7,11 @@ import 'package:studyfi/constants.dart';
 import 'package:studyfi/models/group_content_model.dart';
 import 'package:studyfi/models/upload_content_model.dart';
 import 'package:studyfi/services/api_service.dart';
+// Import for file downloading
+import 'package:path_provider/path_provider.dart';
+import 'package:dio/dio.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:open_file/open_file.dart';
 
 class ContentsPage extends StatefulWidget {
   final int groupId;
@@ -28,6 +33,9 @@ class _ContentsPageState extends State<ContentsPage> {
   final ApiService apiService = ApiService();
   late Future<List<GroupContent>> contentsFuture;
   bool _isLoading = false;
+  // Track downloading state for each content item
+  Map<int, bool> _downloadingStates = {};
+  final Dio _dio = Dio();
 
   @override
   void initState() {
@@ -37,6 +45,75 @@ class _ContentsPageState extends State<ContentsPage> {
 
   Future<void> _refreshContents() async {
     contentsFuture = apiService.fetchGroupContents(widget.groupId);
+  }
+
+  // Function to download the file
+  Future<void> _downloadFile(GroupContent content) async {
+    setState(() {
+      _downloadingStates[content.id] = true;
+    });
+
+    try {
+      // Use app-specific external directory (safe and no permissions needed)
+      Directory? directory = await getExternalStorageDirectory();
+      if (directory == null) throw Exception("Could not access storage.");
+
+      // Create a folder for your app if you want (optional)
+      final downloadDir = Directory('${directory.path}/StudyFiDownloads');
+      if (!await downloadDir.exists()) {
+        await downloadDir.create(recursive: true);
+      }
+
+      final fileName =
+          "${content.title.replaceAll(' ', '_')}_${DateTime.now().millisecondsSinceEpoch}";
+      final fileExtension = _getFileExtension(content.fileURL);
+      final fullFileName = "$fileName$fileExtension";
+      final savePath = "${downloadDir.path}/$fullFileName";
+
+      // Download file
+      await _dio.download(
+        content.fileURL,
+        savePath,
+        onReceiveProgress: (received, total) {
+          // Optional: show progress indicator
+        },
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("File downloaded to: $savePath"),
+            action: SnackBarAction(
+              label: 'Open',
+              onPressed: () => OpenFile.open(savePath),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Download failed: ${e.toString()}")),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _downloadingStates[content.id] = false;
+        });
+      }
+    }
+  }
+
+  // Helper function to extract file extension from URL
+  String _getFileExtension(String url) {
+    Uri uri = Uri.parse(url);
+    String path = uri.path;
+    int lastDotIndex = path.lastIndexOf('.');
+    if (lastDotIndex != -1) {
+      return path.substring(lastDotIndex);
+    }
+    return '.pdf'; // Default extension if none found
   }
 
   @override
@@ -114,15 +191,58 @@ class _ContentsPageState extends State<ContentsPage> {
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
                                     Expanded(
-                                      child: Padding(
-                                        padding: const EdgeInsets.all(8.0),
-                                        child: Image.network(
-                                          content.fileURL,
-                                          fit: BoxFit.cover,
-                                          errorBuilder: (_, __, ___) =>
-                                              const Icon(
-                                                  Icons.image_not_supported),
-                                        ),
+                                      child: Stack(
+                                        fit: StackFit.expand,
+                                        children: [
+                                          Padding(
+                                            padding: const EdgeInsets.all(8.0),
+                                            child: Image.network(
+                                              content.fileURL,
+                                              fit: BoxFit.cover,
+                                              errorBuilder: (_, __, ___) =>
+                                                  const Icon(Icons
+                                                      .image_not_supported),
+                                            ),
+                                          ),
+                                          // Download button overlay
+                                          Positioned(
+                                            top: 0,
+                                            right: 0,
+                                            child: Material(
+                                              color: Colors.transparent,
+                                              child: InkWell(
+                                                onTap: () =>
+                                                    _downloadFile(content),
+                                                child: Container(
+                                                  padding:
+                                                      const EdgeInsets.all(4),
+                                                  decoration: BoxDecoration(
+                                                    color: Constants.dgreen
+                                                        .withOpacity(0.7),
+                                                    shape: BoxShape.circle,
+                                                  ),
+                                                  child: _downloadingStates[
+                                                              content.id] ==
+                                                          true
+                                                      ? const SizedBox(
+                                                          width: 20,
+                                                          height: 20,
+                                                          child:
+                                                              CircularProgressIndicator(
+                                                            color: Colors.white,
+                                                            strokeWidth: 2,
+                                                          ),
+                                                        )
+                                                      : const Icon(
+                                                          Icons.download,
+                                                          color: Colors.white,
+                                                          size: 20,
+                                                        ),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
                                     Text(

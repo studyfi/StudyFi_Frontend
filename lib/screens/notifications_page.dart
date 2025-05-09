@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:studyfi/components/custom_poppins_text.dart';
 import 'package:studyfi/constants.dart';
 import 'package:studyfi/models/notification_model.dart';
+import 'package:studyfi/screens/groups/contents_page.dart';
+import 'package:studyfi/screens/groups/news_page.dart';
 import 'package:studyfi/services/api_service.dart';
 import 'package:intl/intl.dart';
 
@@ -115,6 +117,49 @@ class _NotificationsPageState extends State<NotificationsPage> {
                         color: Colors.white,
                         child: ListTile(
                           contentPadding: const EdgeInsets.all(16),
+                          onTap: () {
+                            final message = notification.message.toLowerCase();
+
+                            if (notification.groupId == null) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                    content: Text(
+                                        "No group associated with this notification.")),
+                              );
+                              return;
+                            }
+
+                            if (message.startsWith('new news')) {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => NewsPage(
+                                    groupId: notification.groupId!,
+                                    groupName:
+                                        notification.groupName ?? 'Group',
+                                  ),
+                                ),
+                              );
+                            } else if (message.startsWith('new content')) {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => ContentsPage(
+                                    groupId: notification.groupId!,
+                                    groupName:
+                                        notification.groupName ?? 'Group',
+                                    groupImageUrl: null, // optional
+                                  ),
+                                ),
+                              );
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                    content:
+                                        Text("Unknown notification type.")),
+                              );
+                            }
+                          },
                           title: CustomPoppinsText(
                             text: notification.message,
                             fontSize: 16,
@@ -146,7 +191,9 @@ class _NotificationsPageState extends State<NotificationsPage> {
                           leading: CircleAvatar(
                             backgroundColor: Constants.lgreen,
                             child: Icon(
-                              notification.message.contains('news')
+                              notification.message
+                                      .toLowerCase()
+                                      .contains('news')
                                   ? Icons.newspaper
                                   : Icons.article,
                               color: Constants.dgreen,

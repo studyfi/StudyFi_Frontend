@@ -15,6 +15,14 @@ class CreateNewsModel {
     this.imageFile,
   });
 
+  // Helper method to check if model is valid
+  bool isValid() {
+    return headline.isNotEmpty &&
+        content.isNotEmpty &&
+        author.isNotEmpty &&
+        groupIds.isNotEmpty;
+  }
+
   Map<String, dynamic> toJson() {
     return {
       'headline': headline,

@@ -4,7 +4,7 @@ class NewsModel {
   final String content;
   final String author;
   final List<int> groupIds;
-  final String imageUrl;
+  final String? imageUrl;
 
   NewsModel({
     required this.id,
@@ -22,7 +22,7 @@ class NewsModel {
       content: json['content'],
       author: json['author'],
       groupIds: List<int>.from(json['groupIds']),
-      imageUrl: json['imageUrl'],
+      imageUrl: json['imageUrl'] != null ? json['imageUrl'] as String : '',
     );
   }
 }

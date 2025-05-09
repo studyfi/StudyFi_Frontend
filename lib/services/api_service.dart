@@ -429,6 +429,9 @@ class ApiService {
   }
 
   Future<bool> createNewsPost(CreateNewsModel news) async {
+    if (!news.isValid()) {
+      throw Exception('Invalid news post data');
+    }
     try {
       var request = http.MultipartRequest(
         'POST',
