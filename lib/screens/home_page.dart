@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:studyfi/components/custom_poppins_text.dart';
 import 'package:studyfi/components/updates.dart';
 import 'package:studyfi/constants.dart';
+import 'package:studyfi/models/profile_model.dart';
 import 'package:studyfi/screens/groups/groups_page.dart';
 import 'package:studyfi/screens/notifications_page.dart';
 import 'package:studyfi/screens/profile/profile_page.dart';
@@ -21,12 +22,26 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   int _selectedIndex = 0;
   int _unreadNotificationsCount = 0;
   final ApiService _apiService = ApiService();
+  UserData? userData;
 
   final List<Widget> _pages = [
     HomeScreenContent(),
     GroupsPage(),
     ProfilePage()
   ];
+
+  Future<void> loadUserData() async {
+    final prefs = await SharedPreferences.getInstance();
+    final userId = prefs.getInt('userId');
+    if (userId != null) {
+      userData = await _apiService.fetchUserData(userId);
+      setState(() {});
+    }
+  }
+
+  String getFirstName(String fullName) {
+    return fullName.split(' ').first;
+  }
 
   @override
   void initState() {
@@ -147,6 +162,7 @@ class _HomeScreenContentState extends State<HomeScreenContent> {
   List<GroupData> notJoinedGroups = [];
   final ApiService apiService = ApiService();
   String? profileImageUrl;
+  UserData? userData;
 
   @override
   void initState() {
@@ -177,6 +193,19 @@ class _HomeScreenContentState extends State<HomeScreenContent> {
         print("Error loading not-joined groups: $e");
       }
     }
+  }
+
+  Future<void> loadUserName() async {
+    final prefs = await SharedPreferences.getInstance();
+    final userId = prefs.getInt('userId');
+    if (userId != null) {
+      userData = await apiService.fetchUserData(userId);
+      setState(() {});
+    }
+  }
+
+  String getFirstName(String fullName) {
+    return fullName.split(' ').first;
   }
 
   @override
@@ -242,20 +271,28 @@ class _HomeScreenContentState extends State<HomeScreenContent> {
               ],
             ),
             SizedBox(height: 12),
+
             CustomPoppinsText(
-              text: "Welcome back Jane!",
+              text: userData != null
+                  ? "Welcome back ${getFirstName(userData!.name)}!"
+                  : "Welcome back!",
               fontSize: 24,
               fontWeight: FontWeight.w700,
               color: Colors.black,
             ),
             SizedBox(height: 30),
+
             Container(
               width: double.infinity,
               height: 200,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(20),
-                image: const DecorationImage(
-                  image: AssetImage("assets/home.jpg"),
+                image: DecorationImage(
+                  image: (userData != null &&
+                          userData!.coverImageUrl != null &&
+                          userData!.coverImageUrl!.isNotEmpty)
+                      ? NetworkImage(userData!.coverImageUrl!)
+                      : const AssetImage("assets/cover.jpg") as ImageProvider,
                   fit: BoxFit.cover,
                 ),
               ),

@@ -158,21 +158,21 @@ class _SignupPageState extends State<SignupPage> {
                   ),
                   MyTextField(
                       controller: dateController,
-                      hintText: "Date",
+                      hintText: "YYYY-MM-DD",
                       obscureText: false),
                   SizedBox(
                     height: 12.0,
                   ),
                   MyTextField(
                       controller: phoneController,
-                      hintText: "Your phone number",
+                      hintText: "Phone number",
                       obscureText: false),
                   SizedBox(
                     height: 12.0,
                   ),
                   MyTextField(
                       controller: countryController,
-                      hintText: "Your country",
+                      hintText: "Country",
                       obscureText: false),
                   SizedBox(
                     height: 12.0,
