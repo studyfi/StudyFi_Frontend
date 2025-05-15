@@ -30,6 +30,10 @@ dependencies:
 
   # Added dependencies for download functionality
   open_file: ^3.3.2
+  timeago: ^3.7.1
+  flutter_slidable: ^4.0.0
+  animated_text_kit: ^4.2.3
+  flutter_staggered_animations: ^1.1.1
 
 dev_dependencies:
   flutter_test:

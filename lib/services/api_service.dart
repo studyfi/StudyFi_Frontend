@@ -4,11 +4,13 @@ import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:mime/mime.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:studyfi/models/comment_model.dart';
 import 'package:studyfi/models/group_content_model.dart';
 import 'package:studyfi/models/group_count_model.dart';
 import 'package:studyfi/models/group_data_model.dart';
 import 'package:studyfi/models/group_update_model.dart';
 import 'package:studyfi/models/not_joined_group_model.dart';
+import 'package:studyfi/models/post_model.dart';
 import 'package:studyfi/models/profile_edit_model.dart';
 import 'package:studyfi/models/signup_model.dart';
 import 'package:studyfi/models/profile_model.dart';
@@ -691,6 +693,149 @@ class ApiService {
     } catch (e) {
       print('Error updating group: $e');
       return false;
+    }
+  }
+
+  // Fetch posts for a group
+  Future<List<Post>> fetchGroupPosts(int groupId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/chats/groups/$groupId/posts'),
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        return data.map((item) => Post.fromJson(item)).toList();
+      } else {
+        print('Failed to load posts. Status code: ${response.statusCode}');
+        throw Exception('Failed to load posts');
+      }
+    } catch (e) {
+      print('Error fetching posts: $e');
+      throw Exception('Failed to load posts: $e');
+    }
+  }
+
+// Create a new post
+  Future<bool> createPost(int groupId, String content) async {
+    try {
+      // Get the user ID from shared preferences
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getInt('userId');
+
+      if (userId == null) {
+        return false;
+      }
+
+      final response = await http.post(
+        Uri.parse('$baseUrl/chats/groups/$groupId/posts'),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: json.encode({
+          'content': content,
+          'user': {'id': userId}
+        }),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return true;
+      } else {
+        print('Failed to create post. Status code: ${response.statusCode}');
+        print('Response body: ${response.body}');
+        return false;
+      }
+    } catch (e) {
+      print('Error creating post: $e');
+      return false;
+    }
+  }
+
+// Like a post
+  Future<bool> likePost(int postId) async {
+    try {
+      // Get the user ID from shared preferences
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getInt('userId');
+
+      if (userId == null) {
+        return false;
+      }
+
+      final response = await http.post(
+        Uri.parse('$baseUrl/chats/posts/$postId/likes'),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: json.encode({'userId': userId}),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return true;
+      } else {
+        print('Failed to like post. Status code: ${response.statusCode}');
+        print('Response body: ${response.body}');
+        return false;
+      }
+    } catch (e) {
+      print('Error liking post: $e');
+      return false;
+    }
+  }
+
+// Add a comment to a post
+  Future<bool> commentOnPost(int postId, String content) async {
+    try {
+      // Get the user ID from shared preferences
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getInt('userId');
+
+      if (userId == null) {
+        return false;
+      }
+
+      final response = await http.post(
+        Uri.parse('$baseUrl/chats/posts/$postId/comments'),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: json.encode({
+          'content': content,
+          'user': {'id': userId}
+        }),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return true;
+      } else {
+        print('Failed to add comment. Status code: ${response.statusCode}');
+        print('Response body: ${response.body}');
+        return false;
+      }
+    } catch (e) {
+      print('Error adding comment: $e');
+      return false;
+    }
+  }
+
+  // Method to fetch comments for a post
+  Future<List<Comment>> fetchPostComments(int postId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/chats/posts/$postId/comments'),
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> jsonData = json.decode(response.body);
+        return jsonData.map((json) => Comment.fromJson(json)).toList();
+      } else {
+        print('Failed to fetch comments: ${response.statusCode}');
+        print('Response body: ${response.body}');
+        return [];
+      }
+    } catch (e) {
+      print('Error fetching comments: $e');
+      return [];
     }
   }
 }

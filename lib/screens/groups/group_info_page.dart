@@ -8,6 +8,7 @@ import 'package:studyfi/screens/groups/contents_page.dart';
 import 'package:studyfi/screens/groups/edit_group_info_page.dart';
 import 'package:studyfi/screens/groups/members_page.dart';
 import 'package:studyfi/screens/groups/news_page.dart';
+import 'package:studyfi/screens/groups/post_page.dart';
 import 'package:studyfi/services/api_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -258,47 +259,93 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
                           ],
                         ),
                         SizedBox(height: 12),
-                        Align(
-                          alignment: Alignment.bottomLeft,
-                          child: GestureDetector(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => MembersPage(
-                                    groupId: widget.groupId,
-                                    groupName: widget.title,
-                                    groupImageUrl: widget.imagePath,
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            GestureDetector(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => MembersPage(
+                                      groupId: widget.groupId,
+                                      groupName: widget.title,
+                                      groupImageUrl: widget.imagePath,
+                                    ),
                                   ),
+                                );
+                              },
+                              child: Container(
+                                height: 170,
+                                width: 170,
+                                decoration: BoxDecoration(
+                                  color: Constants.lgreen,
+                                  borderRadius: BorderRadius.circular(10),
                                 ),
-                              );
-                            },
-                            child: Container(
-                              height: 170,
-                              width: 170,
-                              decoration: BoxDecoration(
-                                color: Constants.lgreen,
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  CustomPoppinsText(
-                                    text: "Members",
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w500,
-                                    color: Colors.black,
-                                  ),
-                                  CustomPoppinsText(
-                                    text: "${counts.userCount}",
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.black,
-                                  ),
-                                ],
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    CustomPoppinsText(
+                                      text: "Members",
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w500,
+                                      color: Colors.black,
+                                    ),
+                                    CustomPoppinsText(
+                                      text: "${counts.userCount}",
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.black,
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
-                          ),
+                            GestureDetector(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => PostsPage(
+                                      groupId: widget.groupId,
+                                      groupName: widget.title,
+                                      groupImageUrl: widget.imagePath,
+                                    ),
+                                  ),
+                                );
+                              },
+                              child: Container(
+                                height: 170,
+                                width: 170,
+                                decoration: BoxDecoration(
+                                  color: Constants.lgreen,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    CustomPoppinsText(
+                                      text: "Posts",
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w500,
+                                      color: Colors.black,
+                                    ),
+                                    Icon(
+                                      Icons.forum_outlined,
+                                      size: 40,
+                                      color: Constants.dgreen,
+                                    ),
+                                    CustomPoppinsText(
+                                      text: "${counts.postsCount}",
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.black,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     );
