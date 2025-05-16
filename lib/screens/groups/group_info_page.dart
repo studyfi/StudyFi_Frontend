@@ -294,12 +294,11 @@ class _GroupInfoPageState extends State<GroupInfoPage> with RouteAware {
                       ),
                       child: CircleAvatar(
                         radius: 60,
-                        backgroundImage: widget.imagePath != null &&
-                                widget.imagePath!.startsWith('http')
+                        backgroundImage: widget.imagePath != null && widget.imagePath!.isNotEmpty
+                            ? (widget.imagePath!.startsWith('http')
                             ? NetworkImage(widget.imagePath!)
-                            : AssetImage(
-                                    widget.imagePath ?? 'assets/group_icon.jpg')
-                                as ImageProvider,
+                            : AssetImage(widget.imagePath!) as ImageProvider)
+                            : const AssetImage('assets/group_icon.jpg'),
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -329,7 +328,7 @@ class _GroupInfoPageState extends State<GroupInfoPage> with RouteAware {
                       child: CustomPoppinsText(
                         text: widget.description,
                         fontSize: 16,
-                        fontWeight: FontWeight.w500,
+                        fontWeight: FontWeight.w300,
                         color: Colors.black87,
                         // textAlign: TextAlign.center,
                       ),
@@ -459,7 +458,7 @@ class _GroupInfoPageState extends State<GroupInfoPage> with RouteAware {
                           ),
                         ),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Constants.dgreen,
+                          backgroundColor: const Color(0xEEF94449),
                           padding: const EdgeInsets.symmetric(vertical: 12),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),

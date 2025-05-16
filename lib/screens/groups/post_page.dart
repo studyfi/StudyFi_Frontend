@@ -436,7 +436,11 @@ class _PostsPageState extends State<PostsPage>
             if (widget.groupImageUrl != null) ...[
               CircleAvatar(
                 radius: 16,
-                backgroundImage: NetworkImage(widget.groupImageUrl!),
+                backgroundImage: widget.groupImageUrl!.isNotEmpty
+                    ? (widget.groupImageUrl!.startsWith('http')
+                    ? NetworkImage(widget.groupImageUrl!)
+                    : AssetImage(widget.groupImageUrl!) as ImageProvider)
+                    : AssetImage('assets/group_icon.jpg'),
               ),
               SizedBox(width: 10),
             ],
