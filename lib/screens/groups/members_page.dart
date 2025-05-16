@@ -275,7 +275,7 @@ class _MembersPageState extends State<MembersPage> {
                 ? (user.profileImageUrl!.startsWith('http')
                 ? NetworkImage(user.profileImageUrl!)
                 : AssetImage(user.profileImageUrl!) as ImageProvider)
-                : const AssetImage('assets/default_profile.jpg'),
+                : const AssetImage('assets/profile.jpg'),
           ),
         ),
         title: CustomPoppinsText(
