@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
@@ -21,16 +22,25 @@ import 'package:studyfi/models/news_model.dart';
 import 'package:studyfi/models/create_news_model.dart';
 import 'package:studyfi/models/notification_model.dart';
 
+enum LoginResult {
+  success,
+  invalidCredentials,
+  unverifiedEmail,
+  networkError,
+  otherError,
+}
+
 class ApiService {
   String baseUrl = "http://192.168.1.100:8080/api/v1";
 
-  Future<bool> login(
+  Future<LoginResult> login(
       BuildContext context, String email, String password) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/users/login'),
+        Uri.parse('$baseUrl/users/login'), // Use your actual endpoint
         headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
+          'Content-Type':
+              'application/x-www-form-urlencoded', // Use your actual content type
         },
         body: {
           'email': email,
@@ -46,23 +56,51 @@ class ApiService {
         await prefs.setInt('userId', userId);
         await prefs.setString(
             'profileImageUrl', responseData['profileImageUrl'] ?? '');
-        return true;
+        return LoginResult.success; // Indicate successful login
       } else {
+        final responseData = json.decode(response.body);
         print('Login failed: ${response.statusCode}');
         print('Response body: ${response.body}');
-        return false;
+
+        if (responseData['message'] ==
+            "Email address is not verified. Please check your email for the verification code.") {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+                content: Text(
+                    'Email address is not verified. Please check your email for the verification code.')),
+          );
+          return LoginResult.unverifiedEmail; // Indicate unverified email
+        } else if (response.statusCode == 401) {
+          // Assuming 401 for invalid credentials
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+                content: Text(
+                    'Login failed: ${responseData['message'] ?? 'Invalid credentials'}')),
+          );
+          return LoginResult.invalidCredentials; // Indicate invalid credentials
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+                content: Text(
+                    'Login failed: ${responseData['message'] ?? response.body}')),
+          );
+          return LoginResult.otherError; // Indicate other errors
+        }
       }
     } catch (e) {
       print('Error during login: $e');
-      return false;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('An error occurred during login: $e')),
+      );
+      return LoginResult.networkError; // Indicate network error
     }
   }
 
-  Future<bool> signup(SignupModel signupData, BuildContext context) async {
+  Future<String?> signup(SignupModel signupData, BuildContext context) async {
     try {
       var request = http.MultipartRequest(
         'POST',
-        Uri.parse('$baseUrl/users/register'),
+        Uri.parse('$baseUrl/users/register'), // Use your actual endpoint
       );
 
       request.fields['name'] = signupData.name;
@@ -80,13 +118,14 @@ class ApiService {
           request.files.add(await http.MultipartFile.fromPath(
             'profileFile',
             signupData.profileFile!,
+            // contentType: MediaType('image', 'jpeg'), // specify content type
           ));
         } else {
           print('Profile file does not exist: ${signupData.profileFile}');
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Profile image file is invalid.')),
           );
-          return false;
+          return null; // Return null on failure
         }
       }
 
@@ -96,13 +135,14 @@ class ApiService {
           request.files.add(await http.MultipartFile.fromPath(
             'coverFile',
             signupData.coverFile!,
+            // contentType: MediaType('image', 'jpeg'), // You might need to specify content type
           ));
         } else {
           print('Cover file does not exist: ${signupData.coverFile}');
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Cover image file is invalid.')),
           );
-          return false;
+          return null; // Return null on failure
         }
       }
 
@@ -112,14 +152,12 @@ class ApiService {
       print('Response body: $responseBody');
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        final responseData = json.decode(responseBody);
-        print('Signup successful: $responseData');
-        int userId = responseData['id'] ?? -1;
-        if (userId != -1) {
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.setInt('userId', userId);
-        }
-        return true;
+        // Assuming successful signup implies email sent for verification
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text('Signup successful! Please verify your email.')),
+        );
+        return signupData.email; // Return the email
       } else {
         final responseData = json.decode(responseBody);
         print('Signup failed: ${response.statusCode}');
@@ -129,13 +167,64 @@ class ApiService {
               content: Text(
                   'Signup failed: ${responseData['message'] ?? 'Invalid data'}')),
         );
-        return false;
+        return null; // Return null on failure
       }
     } catch (e) {
       print('Error during signup: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('An error occurred during signup.')),
       );
+      return null; // Return null on error
+    }
+  }
+
+  Future<bool> validateEmailCode(String email, String code) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/email-verification/validate-email-code'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'email': email,
+          'code': code,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        return true; // Code is valid
+      } else {
+        // Handle invalid code or other errors
+        log('Email validation failed: ${response.statusCode}');
+        log('Response body: ${response.body}');
+        return false;
+      }
+    } catch (e) {
+      // Handle network or other errors
+      log('Error during email validation: $e');
+      return false;
+    }
+  }
+
+  Future<bool> resendEmailCode(String email) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/email-verification/send-email-code'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'email': email,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        return true; // Code resent successfully
+      } else {
+        // Handle errors
+        log('Failed to resend email verification code: ${response.statusCode}');
+        log('Response body: ${response.body}');
+        return false;
+      }
+    } catch (e) {
+      // Handle network or other errors
+      log('Error during email code resend: $e');
       return false;
     }
   }
@@ -783,6 +872,35 @@ class ApiService {
     }
   }
 
+  Future<bool> unlikePost(int postId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getInt('userId');
+
+      if (userId == null) {
+        return false;
+      }
+
+      final response = await http.delete(
+        Uri.parse('$baseUrl/chats/posts/$postId/likes?userId=$userId'),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        return true;
+      } else {
+        print('Failed to unlike post. Status code: ${response.statusCode}');
+        print('Response body: ${response.body}');
+        return false;
+      }
+    } catch (e) {
+      print('Error unliking post: $e');
+      return false;
+    }
+  }
+
 // Add a comment to a post
   Future<bool> commentOnPost(int postId, String content) async {
     try {
@@ -836,6 +954,43 @@ class ApiService {
     } catch (e) {
       print('Error fetching comments: $e');
       return [];
+    }
+  }
+
+  Future<Map<String, dynamic>> fetchPostLikes(int postId) async {
+    try {
+      // Get the user ID from shared preferences
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getInt('userId');
+
+      if (userId == null) {
+        throw Exception('User ID not found in SharedPreferences');
+      }
+
+      final response = await http.get(
+        Uri.parse('$baseUrl/chats/posts/$postId/likes?currentUserId=$userId'),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final jsonData = json.decode(response.body);
+        return {
+          'likeCount': jsonData['likeCount'] as int,
+          'likedUsers': (jsonData['likedUsers'] as List)
+              .map((user) => PostUser.fromJson(user))
+              .toList(),
+          'likedByCurrentUser': jsonData['likedByCurrentUser'] as bool,
+        };
+      } else {
+        print('Failed to fetch likes. Status code: ${response.statusCode}');
+        print('Response body: ${response.body}');
+        throw Exception('Failed to fetch likes');
+      }
+    } catch (e) {
+      print('Error fetching likes: $e');
+      throw Exception('Failed to fetch likes: $e');
     }
   }
 }

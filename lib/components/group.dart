@@ -9,6 +9,7 @@ class Group extends StatelessWidget {
   final String? imagePath;
   final String title;
   final String description;
+  final RouteObserver<ModalRoute> routeObserver; // Add RouteObserver parameter
 
   const Group({
     super.key,
@@ -16,6 +17,7 @@ class Group extends StatelessWidget {
     required this.imagePath,
     required this.title,
     required this.description,
+    required this.routeObserver,
   });
 
   @override
@@ -76,6 +78,7 @@ class Group extends StatelessWidget {
                     imagePath: imagePath,
                     title: title,
                     description: description,
+                    routeObserver: routeObserver, // Pass RouteObserver
                   ),
                 ),
               );

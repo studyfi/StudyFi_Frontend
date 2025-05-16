@@ -13,13 +13,15 @@ import 'package:studyfi/models/group_data_model.dart';
 import 'package:studyfi/services/api_service.dart';
 
 class GroupsPage extends StatefulWidget {
-  GroupsPage({super.key});
+  final RouteObserver<ModalRoute> routeObserver; // Add RouteObserver parameter
+
+  const GroupsPage({super.key, required this.routeObserver});
 
   @override
   State<GroupsPage> createState() => _GroupsPageState();
 }
 
-class _GroupsPageState extends State<GroupsPage> {
+class _GroupsPageState extends State<GroupsPage> with RouteAware {
   List<GroupData> groups = [];
 
   ApiService service = ApiService();
@@ -28,6 +30,25 @@ class _GroupsPageState extends State<GroupsPage> {
   void initState() {
     super.initState();
     loadGroupsForUser();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    widget.routeObserver.subscribe(this, ModalRoute.of(context)!);
+  }
+
+  @override
+  void dispose() {
+    widget.routeObserver.unsubscribe(this);
+    super.dispose();
+  }
+
+  @override
+  void didPopNext() {
+    // Called when user navigates back to this page
+    print("Returned to GroupsPage");
+    loadGroupsForUser(); // Refresh groups
   }
 
   Future<int?> getUserIdFromPrefs() async {
@@ -207,6 +228,8 @@ class _GroupsPageState extends State<GroupsPage> {
                           title: group.name,
                           description: group.description,
                           imagePath: group.imageUrl,
+                          routeObserver:
+                              widget.routeObserver, // Pass RouteObserver
                         );
                       },
                     ),

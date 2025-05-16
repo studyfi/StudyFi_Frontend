@@ -5,6 +5,10 @@ import 'package:studyfi/screens/login_page.dart';
 import 'package:studyfi/screens/signup_page.dart';
 import 'package:studyfi/screens/splash_screen.dart';
 
+// Create a RouteObserver instance
+final RouteObserver<ModalRoute<dynamic>> routeObserver =
+    RouteObserver<ModalRoute<dynamic>>();
+
 void main() {
   runApp(const MyApp());
 }
@@ -12,16 +16,17 @@ void main() {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-        title: 'Flutter Demo',
-        debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(seedColor: Constants.lgreen),
-          useMaterial3: true,
-        ),
-        home: SplashScreen());
+      title: 'Flutter Demo',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: Constants.lgreen),
+        useMaterial3: true,
+      ),
+      navigatorObservers: [routeObserver], // Add RouteObserver to MaterialApp
+      home: const SplashScreen(), // No routeObserver parameter
+    );
   }
 }

@@ -17,6 +17,7 @@ class GroupInfoPage extends StatefulWidget {
   final String title;
   final String description;
   final int groupId;
+  final RouteObserver<ModalRoute> routeObserver;
 
   const GroupInfoPage({
     super.key,
@@ -24,20 +25,48 @@ class GroupInfoPage extends StatefulWidget {
     this.imagePath,
     required this.title,
     required this.description,
+    required this.routeObserver,
   });
 
   @override
   State<GroupInfoPage> createState() => _GroupInfoPageState();
 }
 
-class _GroupInfoPageState extends State<GroupInfoPage> {
+class _GroupInfoPageState extends State<GroupInfoPage> with RouteAware {
   late Future<GroupCountModel> _countFuture;
   ApiService service = ApiService();
 
   @override
   void initState() {
     super.initState();
-    _countFuture = service.fetchGroupCounts(widget.groupId);
+    _refreshCounts();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Subscribe to the passed RouteObserver
+    widget.routeObserver.subscribe(this, ModalRoute.of(context)!);
+  }
+
+  @override
+  void dispose() {
+    // Unsubscribe from the RouteObserver
+    widget.routeObserver.unsubscribe(this);
+    super.dispose();
+  }
+
+  // Called when the route is popped and this page is shown again
+  @override
+  void didPopNext() {
+    // Refresh counts when returning to this page
+    _refreshCounts();
+  }
+
+  void _refreshCounts() {
+    setState(() {
+      _countFuture = service.fetchGroupCounts(widget.groupId);
+    });
   }
 
   void showAddGroupDialog() async {

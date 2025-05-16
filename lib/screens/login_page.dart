@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:studyfi/components/custom_poppins_text.dart';
@@ -7,6 +5,7 @@ import 'package:studyfi/components/text_field.dart';
 import 'package:studyfi/constants.dart';
 import 'package:studyfi/screens/forgot_password_page.dart';
 import 'package:studyfi/screens/home_page.dart';
+import 'package:studyfi/screens/profile/email_verification_page.dart';
 import 'package:studyfi/screens/signup_page.dart';
 import 'package:studyfi/services/api_service.dart';
 
@@ -96,19 +95,37 @@ class _LoginPageState extends State<LoginPage> {
                 Button(
                   buttonText: "Login",
                   onTap: () async {
-                    bool success = await service.login(
+                    // Call the login function from the service and get the result
+                    LoginResult result = await service.login(
                         context, emailController.text, passwordController.text);
-                    if (success) {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => HomePage()),
-                      );
-                    } else {
-                      // Optional: Show snackbar or dialog
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                            content: Text("Login failed. Please try again.")),
-                      );
+
+                    switch (result) {
+                      case LoginResult.success:
+                        // Navigate to the home page on successful login
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(builder: (context) => HomePage()),
+                        );
+                        break;
+                      case LoginResult.unverifiedEmail:
+                        // Navigate to the email verification page if email is unverified
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => EmailVerificationPage(
+                                email: emailController.text),
+                          ),
+                        );
+                        break;
+                      case LoginResult.invalidCredentials:
+                        // ApiService already shows a SnackBar for this case
+                        break;
+                      case LoginResult.networkError:
+                        // ApiService already shows a SnackBar for this case
+                        break;
+                      case LoginResult.otherError:
+                        // ApiService already shows a SnackBar for this case
+                        break;
                     }
                   },
                   buttonColor: Constants.dgreen,

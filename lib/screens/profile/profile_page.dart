@@ -4,6 +4,7 @@ import 'package:studyfi/components/custom_poppins_text.dart';
 import 'package:studyfi/constants.dart';
 import 'package:studyfi/models/profile_model.dart';
 import 'package:studyfi/screens/home_page.dart';
+import 'package:studyfi/screens/login_page.dart';
 import 'package:studyfi/screens/profile/edit_profile_page.dart';
 import 'package:studyfi/services/api_service.dart';
 
@@ -50,8 +51,10 @@ class _ProfilePageState extends State<ProfilePage> {
         return AlertDialog(
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-          title: const Text("Confirm Logout",
-              style: TextStyle(fontWeight: FontWeight.bold)),
+          title: const Text(
+            "Confirm Logout",
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
           content: const Text("Are you sure you want to logout?"),
           actions: [
             TextButton(
@@ -59,15 +62,28 @@ class _ProfilePageState extends State<ProfilePage> {
               child: Text("Cancel", style: TextStyle(color: Constants.dgreen)),
             ),
             ElevatedButton(
-              onPressed: () {
+              onPressed: () async {
+                // Clear SharedPreferences
+                final prefs = await SharedPreferences.getInstance();
+                await prefs
+                    .clear(); // Or remove specific keys like prefs.remove('userId')
+
+                // Close the dialog
                 Navigator.of(context).pop();
-                // You can also clear SharedPreferences here if needed
+
+                // Navigate to the login screen and remove previous routes
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (context) => const LoginPage()),
+                  (route) => false, // This removes all previous routes
+                );
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Constants.dgreen,
                 elevation: 2,
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8)),
+                  borderRadius: BorderRadius.circular(8),
+                ),
               ),
               child:
                   const Text("Logout", style: TextStyle(color: Colors.white)),

@@ -9,6 +9,7 @@ import 'package:studyfi/components/text_field.dart';
 import 'package:studyfi/constants.dart';
 import 'package:studyfi/models/signup_model.dart';
 import 'package:studyfi/screens/login_page.dart';
+import 'package:studyfi/screens/profile/email_verification_page.dart';
 import 'package:studyfi/services/api_service.dart';
 
 class SignupPage extends StatefulWidget {
@@ -215,24 +216,21 @@ class _SignupPageState extends State<SignupPage> {
                           coverFile: _coverImage?.path,
                         );
                         // Call the signup function from the service
-                        bool isSuccessful =
+                        String? registeredEmail =
                             await service.signup(signupData, context);
 
-                        if (isSuccessful) {
-                          // Navigate to the next page
+                        if (registeredEmail != null) {
+                          // Navigate to the EmailVerificationPage on successful signup
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                                builder: (context) =>
-                                    LoginPage()), // Replace with your next page
+                              builder: (context) => EmailVerificationPage(
+                                  email:
+                                      registeredEmail), // Navigate to EmailVerificationPage and pass email
+                            ),
                           );
                         } else {
-                          // Show a message or handle the failure
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                                content: Text(
-                                    'Signup failed. Please check your information.')),
-                          );
+                          // Signup failed - the error message is handled in ApiService
                         }
                       },
                       buttonColor: Constants.dgreen)

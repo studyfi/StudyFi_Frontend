@@ -10,6 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:studyfi/services/api_service.dart';
 import 'package:studyfi/models/group_data_model.dart';
 import 'package:studyfi/models/notification_model.dart';
+import 'package:studyfi/main.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -26,18 +27,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
   final List<Widget> _pages = [
     HomeScreenContent(),
-    GroupsPage(),
+    GroupsPage(routeObserver: routeObserver),
     ProfilePage()
   ];
-
-  Future<void> loadUserData() async {
-    final prefs = await SharedPreferences.getInstance();
-    final userId = prefs.getInt('userId');
-    if (userId != null) {
-      userData = await _apiService.fetchUserData(userId);
-      setState(() {});
-    }
-  }
 
   String getFirstName(String fullName) {
     return fullName.split(' ').first;
@@ -88,11 +80,18 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
   void _onItemTapped(int index) {
     setState(() {
-      // If coming back to home tab, refresh notifications
-      if (_selectedIndex != 0 && index == 0) {
-        _fetchUnreadNotificationsCount();
-      }
       _selectedIndex = index;
+
+      // If coming back to Home tab, refresh notification count and reinitialize HomeScreenContent
+      if (index == 0) {
+        _fetchUnreadNotificationsCount();
+
+        // ✅ Force reinitialization of HomeScreenContent
+        _pages[0] = HomeScreenContent(
+          unreadNotificationsCount: _unreadNotificationsCount,
+          onNotificationTap: _navigateToNotifications,
+        );
+      }
     });
   }
 
@@ -162,6 +161,7 @@ class _HomeScreenContentState extends State<HomeScreenContent> {
   List<GroupData> notJoinedGroups = [];
   final ApiService apiService = ApiService();
   String? profileImageUrl;
+  String? coverImageUrl;
   UserData? userData;
 
   @override
@@ -176,8 +176,24 @@ class _HomeScreenContentState extends State<HomeScreenContent> {
   Future<void> loadUserData() async {
     final prefs = await SharedPreferences.getInstance();
     profileImageUrl = prefs.getString('profileImageUrl');
-    print('Loaded profile image URL: $profileImageUrl');
-    setState(() {}); // Rebuild to reflect image
+    coverImageUrl = prefs.getString('coverImageUrl'); // Load cover image URL
+    final userId = prefs.getInt('userId');
+
+    // If coverImageUrl or profileImageUrl is missing, fetch from API
+    if (userId != null && (profileImageUrl == null || coverImageUrl == null)) {
+      userData = await apiService.fetchUserData(userId);
+      if (userData != null) {
+        // Save to SharedPreferences
+        await prefs.setString(
+            'profileImageUrl', userData!.profileImageUrl ?? '');
+        await prefs.setString('coverImageUrl', userData!.coverImageUrl ?? '');
+        profileImageUrl = userData!.profileImageUrl;
+        coverImageUrl = userData!.coverImageUrl;
+        print(
+            'Loaded from API - Profile: $profileImageUrl, Cover: $coverImageUrl');
+      }
+    }
+    setState(() {});
   }
 
   Future<void> loadNotJoinedGroups() async {
@@ -288,10 +304,10 @@ class _HomeScreenContentState extends State<HomeScreenContent> {
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(20),
                 image: DecorationImage(
-                  image: (userData != null &&
-                          userData!.coverImageUrl != null &&
-                          userData!.coverImageUrl!.isNotEmpty)
-                      ? NetworkImage(userData!.coverImageUrl!)
+                  image: (coverImageUrl != null &&
+                          coverImageUrl!.startsWith('http') &&
+                          coverImageUrl!.isNotEmpty)
+                      ? NetworkImage(coverImageUrl!)
                       : const AssetImage("assets/cover.jpg") as ImageProvider,
                   fit: BoxFit.cover,
                 ),

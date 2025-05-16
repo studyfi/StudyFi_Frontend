@@ -10,6 +10,8 @@ import 'package:timeago/timeago.dart' as timeago;
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:animated_text_kit/animated_text_kit.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 class PostsPage extends StatefulWidget {
   final int groupId;
@@ -38,7 +40,7 @@ class _PostsPageState extends State<PostsPage>
   bool _isShowingComments = false;
   int? _expandedPostId;
   Map<int, List<Comment>> _commentsCache = {};
-
+  Map<int, Map<String, dynamic>> _likesCache = {};
   final FocusNode _postFocusNode = FocusNode();
   bool _isExpanded = false;
 
@@ -46,17 +48,14 @@ class _PostsPageState extends State<PostsPage>
   void initState() {
     super.initState();
     _loadPosts();
-
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 300),
     );
-
     _animation = CurvedAnimation(
       parent: _animationController,
       curve: Curves.easeInOut,
     );
-
     _postFocusNode.addListener(() {
       if (_postFocusNode.hasFocus && !_isExpanded) {
         setState(() {
@@ -80,7 +79,6 @@ class _PostsPageState extends State<PostsPage>
     });
   }
 
-  // Format post timestamp for display
   String _formatTimestamp(String timestamp) {
     try {
       final date = DateTime.parse(timestamp);
@@ -95,24 +93,21 @@ class _PostsPageState extends State<PostsPage>
       _showSnackBar('Post content cannot be empty', isError: true);
       return;
     }
-
     setState(() {
       _isCreatingPost = true;
     });
-
     try {
       final success = await _apiService.createPost(
         widget.groupId,
         _postController.text.trim(),
       );
-
       if (success) {
         _showSnackBar('Post created successfully');
         _postController.clear();
         setState(() {
           _isExpanded = false;
         });
-        _loadPosts(); // Reload posts
+        _loadPosts();
       } else {
         _showSnackBar('Failed to create post', isError: true);
       }
@@ -128,7 +123,7 @@ class _PostsPageState extends State<PostsPage>
   void _showSnackBar(String message, {bool isError = false}) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message),
+        content: Text(message, style: TextStyle(color: Colors.white)),
         backgroundColor: isError ? Colors.red : Constants.dgreen,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
@@ -143,13 +138,34 @@ class _PostsPageState extends State<PostsPage>
     );
   }
 
+  Future<void> _loadLikes(int postId) async {
+    if (_likesCache.containsKey(postId)) return;
+    try {
+      final likesData = await _apiService.fetchPostLikes(postId);
+      setState(() {
+        _likesCache[postId] = likesData;
+      });
+    } catch (e) {
+      _showSnackBar('Error loading likes: ${e.toString()}', isError: true);
+    }
+  }
+
   Future<void> _likePost(int postId) async {
     try {
-      final success = await _apiService.likePost(postId);
+      final likesData = _likesCache[postId];
+      final isLiked = likesData?['likedByCurrentUser'] ?? false;
+      final success = isLiked
+          ? await _apiService.unlikePost(postId)
+          : await _apiService.likePost(postId);
       if (success) {
-        _loadPosts(); // Reload posts to show updated like count
+        setState(() {
+          _likesCache.remove(postId);
+        });
+        await _loadLikes(postId);
+        _loadPosts();
       } else {
-        _showSnackBar('Failed to like post', isError: true);
+        _showSnackBar('Failed to ${isLiked ? 'unlike' : 'like'} post',
+            isError: true);
       }
     } catch (e) {
       _showSnackBar('Error: ${e.toString()}', isError: true);
@@ -157,10 +173,7 @@ class _PostsPageState extends State<PostsPage>
   }
 
   Future<void> _loadComments(int postId) async {
-    if (_commentsCache.containsKey(postId)) {
-      return;
-    }
-
+    if (_commentsCache.containsKey(postId)) return;
     try {
       final comments = await _apiService.fetchPostComments(postId);
       setState(() {
@@ -199,7 +212,7 @@ class _PostsPageState extends State<PostsPage>
           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: Constants.dgreen.withOpacity(0.1),
               blurRadius: 10,
               spreadRadius: 0,
             ),
@@ -244,6 +257,8 @@ class _PostsPageState extends State<PostsPage>
                   ),
                   contentPadding:
                       EdgeInsets.symmetric(horizontal: 15, vertical: 15),
+                  filled: true,
+                  fillColor: Colors.grey[50],
                 ),
                 maxLines: 3,
                 autofocus: true,
@@ -257,21 +272,17 @@ class _PostsPageState extends State<PostsPage>
                       _showSnackBar('Comment cannot be empty', isError: true);
                       return;
                     }
-
                     Navigator.of(context).pop();
-
                     final success = await _apiService.commentOnPost(
                       postId,
                       commentController.text.trim(),
                     );
-
                     if (success) {
                       _showSnackBar('Comment added successfully');
-                      // Remove from cache to force refresh
                       if (_commentsCache.containsKey(postId)) {
                         _commentsCache.remove(postId);
                       }
-                      _loadPosts(); // Reload posts to show updated comment count
+                      _loadPosts();
                       if (_expandedPostId == postId) {
                         _loadComments(postId);
                       }
@@ -315,9 +326,7 @@ class _PostsPageState extends State<PostsPage>
         ),
       );
     }
-
     final comments = _commentsCache[postId]!;
-
     if (comments.isEmpty) {
       return Padding(
         padding: const EdgeInsets.all(20.0),
@@ -332,10 +341,9 @@ class _PostsPageState extends State<PostsPage>
         ),
       );
     }
-
     return Column(
       children: [
-        Divider(thickness: 1, color: Colors.grey[300]),
+        Divider(thickness: 1, color: Constants.lgreen),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
           child: Align(
@@ -364,6 +372,7 @@ class _PostsPageState extends State<PostsPage>
                 children: [
                   CircleAvatar(
                     radius: 16,
+                    backgroundColor: Constants.lgreen,
                     backgroundImage: comment.user.profileImageUrl != null
                         ? NetworkImage(comment.user.profileImageUrl!)
                         : AssetImage('assets/profile_placeholder.png')
@@ -382,6 +391,7 @@ class _PostsPageState extends State<PostsPage>
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 14,
+                                color: Colors.black87,
                               ),
                             ),
                             Text(
@@ -396,7 +406,7 @@ class _PostsPageState extends State<PostsPage>
                         SizedBox(height: 4),
                         Text(
                           comment.content,
-                          style: TextStyle(fontSize: 14),
+                          style: TextStyle(fontSize: 14, color: Colors.black87),
                         ),
                       ],
                     ),
@@ -413,7 +423,7 @@ class _PostsPageState extends State<PostsPage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -451,7 +461,6 @@ class _PostsPageState extends State<PostsPage>
       ),
       body: Column(
         children: [
-          // Create post area
           AnimatedContainer(
             duration: Duration(milliseconds: 300),
             curve: Curves.easeInOut,
@@ -461,7 +470,7 @@ class _PostsPageState extends State<PostsPage>
               color: Colors.white,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Constants.dgreen.withOpacity(0.05),
                   offset: Offset(0, 2),
                   blurRadius: 5,
                 )
@@ -469,7 +478,6 @@ class _PostsPageState extends State<PostsPage>
             ),
             child: Column(
               children: [
-                // Post text field
                 Expanded(
                   child: Container(
                     decoration: BoxDecoration(
@@ -501,8 +509,6 @@ class _PostsPageState extends State<PostsPage>
                     ),
                   ),
                 ),
-
-                // Post button
                 AnimatedContainer(
                   duration: Duration(milliseconds: 300),
                   height: _isExpanded ? 50 : 0,
@@ -567,8 +573,6 @@ class _PostsPageState extends State<PostsPage>
               ],
             ),
           ),
-
-          // Posts list
           Expanded(
             child: FutureBuilder<List<Post>>(
               future: _postsFuture,
@@ -657,7 +661,6 @@ class _PostsPageState extends State<PostsPage>
                     ),
                   );
                 }
-
                 final posts = snapshot.data!;
                 return RefreshIndicator(
                   onRefresh: () async {
@@ -671,7 +674,7 @@ class _PostsPageState extends State<PostsPage>
                       itemBuilder: (context, index) {
                         final post = posts[index];
                         final isExpanded = _expandedPostId == post.postId;
-
+                        _loadLikes(post.postId);
                         return AnimationConfiguration.staggeredList(
                           position: index,
                           duration: const Duration(milliseconds: 375),
@@ -684,12 +687,11 @@ class _PostsPageState extends State<PostsPage>
                                   borderRadius: BorderRadius.circular(15),
                                 ),
                                 elevation: 2,
-                                shadowColor: Colors.black.withOpacity(0.1),
+                                shadowColor: Constants.dgreen.withOpacity(0.1),
                                 child: Column(
                                   children: [
                                     InkWell(
                                       onLongPress: () {
-                                        // Add long press actions here
                                         _showSnackBar(
                                             'Post options coming soon!');
                                       },
@@ -699,7 +701,6 @@ class _PostsPageState extends State<PostsPage>
                                           crossAxisAlignment:
                                               CrossAxisAlignment.start,
                                           children: [
-                                            // User info and timestamp
                                             Row(
                                               children: [
                                                 CircleAvatar(
@@ -726,6 +727,7 @@ class _PostsPageState extends State<PostsPage>
                                                           fontWeight:
                                                               FontWeight.bold,
                                                           fontSize: 16,
+                                                          color: Colors.black87,
                                                         ),
                                                       ),
                                                       Text(
@@ -741,31 +743,102 @@ class _PostsPageState extends State<PostsPage>
                                                 ),
                                               ],
                                             ),
-
-                                            // Post content
                                             Padding(
                                               padding:
                                                   const EdgeInsets.symmetric(
                                                       vertical: 16),
                                               child: Text(
                                                 post.content,
-                                                style: TextStyle(fontSize: 16),
+                                                style: TextStyle(
+                                                  fontSize: 16,
+                                                  color: Colors.black87,
+                                                ),
                                               ),
                                             ),
-
-                                            // Interaction stats
                                             Row(
                                               children: [
-                                                Icon(Icons.thumb_up,
-                                                    size: 14,
-                                                    color: Constants.dgreen
-                                                        .withOpacity(0.7)),
-                                                SizedBox(width: 4),
-                                                Text(
-                                                  '${post.likeCount}',
-                                                  style: TextStyle(
-                                                    color: Colors.grey[700],
-                                                    fontSize: 14,
+                                                GestureDetector(
+                                                  onTap: () {
+                                                    final likesData =
+                                                        _likesCache[
+                                                            post.postId];
+                                                    if (likesData != null &&
+                                                        (likesData['likedUsers']
+                                                                as List)
+                                                            .isNotEmpty) {
+                                                      showDialog(
+                                                        context: context,
+                                                        builder: (context) =>
+                                                            AlertDialog(
+                                                          title:
+                                                              Text('Liked by'),
+                                                          content: Container(
+                                                            width: double
+                                                                .maxFinite,
+                                                            constraints:
+                                                                BoxConstraints(
+                                                                    maxHeight:
+                                                                        300),
+                                                            child: ListView
+                                                                .builder(
+                                                              itemCount: (likesData[
+                                                                          'likedUsers']
+                                                                      as List)
+                                                                  .length,
+                                                              itemBuilder:
+                                                                  (context,
+                                                                      index) {
+                                                                final user = likesData[
+                                                                            'likedUsers']
+                                                                        [index]
+                                                                    as PostUser;
+                                                                return ListTile(
+                                                                  leading:
+                                                                      CircleAvatar(
+                                                                    backgroundImage: user.profileImageUrl !=
+                                                                            null
+                                                                        ? NetworkImage(user
+                                                                            .profileImageUrl!)
+                                                                        : AssetImage('assets/profile_placeholder.png')
+                                                                            as ImageProvider,
+                                                                  ),
+                                                                  title: Text(
+                                                                      user.name),
+                                                                );
+                                                              },
+                                                            ),
+                                                          ),
+                                                          actions: [
+                                                            TextButton(
+                                                              onPressed: () =>
+                                                                  Navigator.pop(
+                                                                      context),
+                                                              child:
+                                                                  Text('Close'),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      );
+                                                    }
+                                                  },
+                                                  child: Row(
+                                                    children: [
+                                                      Icon(Icons.thumb_up,
+                                                          size: 14,
+                                                          color: Constants
+                                                              .dgreen
+                                                              .withOpacity(
+                                                                  0.7)),
+                                                      SizedBox(width: 4),
+                                                      Text(
+                                                        '${_likesCache[post.postId]?['likeCount'] ?? post.likeCount}',
+                                                        style: TextStyle(
+                                                          color:
+                                                              Colors.grey[700],
+                                                          fontSize: 14,
+                                                        ),
+                                                      ),
+                                                    ],
                                                   ),
                                                 ),
                                                 SizedBox(width: 16),
@@ -787,14 +860,10 @@ class _PostsPageState extends State<PostsPage>
                                         ),
                                       ),
                                     ),
-
-                                    // Divider
                                     Divider(
                                         height: 1,
                                         thickness: 1,
                                         color: Colors.grey[200]),
-
-                                    // Action buttons
                                     Container(
                                       decoration: BoxDecoration(
                                         color: Colors.grey[50],
@@ -804,7 +873,6 @@ class _PostsPageState extends State<PostsPage>
                                       ),
                                       child: Row(
                                         children: [
-                                          // Like button
                                           Expanded(
                                             child: Material(
                                               color: Colors.transparent,
@@ -825,14 +893,24 @@ class _PostsPageState extends State<PostsPage>
                                                             .center,
                                                     children: [
                                                       Icon(
-                                                        Icons
-                                                            .thumb_up_alt_outlined,
+                                                        _likesCache[post.postId]
+                                                                    ?[
+                                                                    'likedByCurrentUser'] ??
+                                                                false
+                                                            ? Icons.thumb_up_alt
+                                                            : Icons
+                                                                .thumb_up_alt_outlined,
                                                         size: 18,
                                                         color: Constants.dgreen,
                                                       ),
                                                       const SizedBox(width: 8),
                                                       Text(
-                                                        'Like',
+                                                        _likesCache[post.postId]
+                                                                    ?[
+                                                                    'likedByCurrentUser'] ??
+                                                                false
+                                                            ? 'Unlike'
+                                                            : 'Like',
                                                         style: TextStyle(
                                                           color:
                                                               Constants.dgreen,
@@ -847,15 +925,11 @@ class _PostsPageState extends State<PostsPage>
                                               ),
                                             ),
                                           ),
-
-                                          // Vertical divider
                                           Container(
                                             height: 24,
                                             width: 1,
                                             color: Colors.grey[300],
                                           ),
-
-                                          // Comment button
                                           Expanded(
                                             child: Material(
                                               color: Colors.transparent,
@@ -901,8 +975,6 @@ class _PostsPageState extends State<PostsPage>
                                         ],
                                       ),
                                     ),
-
-                                    // Show/hide comments
                                     if (post.commentCount > 0)
                                       InkWell(
                                         onTap: () =>
@@ -944,8 +1016,6 @@ class _PostsPageState extends State<PostsPage>
                                           ),
                                         ),
                                       ),
-
-                                    // Comments section (expandable)
                                     if (isExpanded)
                                       _buildCommentsList(post.postId),
                                   ],
