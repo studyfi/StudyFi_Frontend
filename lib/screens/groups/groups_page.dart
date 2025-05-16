@@ -1,11 +1,8 @@
 import 'dart:io';
-
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
-
 import 'package:studyfi/components/custom_poppins_text.dart';
 import 'package:studyfi/components/group.dart';
 import 'package:studyfi/constants.dart';
@@ -13,7 +10,7 @@ import 'package:studyfi/models/group_data_model.dart';
 import 'package:studyfi/services/api_service.dart';
 
 class GroupsPage extends StatefulWidget {
-  final RouteObserver<ModalRoute> routeObserver; // Add RouteObserver parameter
+  final RouteObserver<ModalRoute> routeObserver;
 
   const GroupsPage({super.key, required this.routeObserver});
 
@@ -23,13 +20,12 @@ class GroupsPage extends StatefulWidget {
 
 class _GroupsPageState extends State<GroupsPage> with RouteAware {
   List<GroupData> groups = [];
-
-  ApiService service = ApiService();
+  final ApiService service = ApiService();
 
   @override
   void initState() {
     super.initState();
-    loadGroupsForUser();
+    _loadGroupsForUser();
   }
 
   @override
@@ -46,36 +42,31 @@ class _GroupsPageState extends State<GroupsPage> with RouteAware {
 
   @override
   void didPopNext() {
-    // Called when user navigates back to this page
-    print("Returned to GroupsPage");
-    loadGroupsForUser(); // Refresh groups
+    print("Returned to GroupsPage via pop");
+    _loadGroupsForUser();
   }
 
-  Future<int?> getUserIdFromPrefs() async {
+  Future<int?> _getUserIdFromPrefs() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getInt('userId');
   }
 
-  Future<void> loadGroupsForUser() async {
-    final userId = await getUserIdFromPrefs();
+  Future<void> _loadGroupsForUser() async {
+    print("Loading groups for user...");
+    final userId = await _getUserIdFromPrefs();
     if (userId == null) {
       print("User ID not found.");
       return;
     }
 
-    final response = await http
-        .get(Uri.parse('http://192.168.1.100:8080/api/v1/groups/user/$userId'));
-
-    if (response.statusCode == 200) {
-      final List<dynamic> jsonList = json.decode(response.body);
-      final List<GroupData> fetchedGroups =
-          jsonList.map((jsonItem) => GroupData.fromJson(jsonItem)).toList();
-
+    try {
+      final fetchedGroups = await service.fetchUserGroups(userId);
       setState(() {
         groups = fetchedGroups;
       });
-    } else {
-      print('Failed to fetch groups: ${response.statusCode}');
+      print("Groups loaded: ${groups.length}");
+    } catch (e) {
+      print('Error fetching groups: $e');
     }
   }
 
@@ -103,7 +94,7 @@ class _GroupsPageState extends State<GroupsPage> with RouteAware {
                     TextField(
                       controller: descriptionController,
                       decoration:
-                          InputDecoration(hintText: "Enter group description"),
+                      InputDecoration(hintText: "Enter group description"),
                       maxLines: 2,
                     ),
                     SizedBox(height: 12),
@@ -152,13 +143,12 @@ class _GroupsPageState extends State<GroupsPage> with RouteAware {
                         );
 
                         print('Group created: $response');
-                        final prefs = await SharedPreferences.getInstance();
-                        final userId = prefs.getInt('userId');
+                        final userId = await _getUserIdFromPrefs();
                         final groupId = response['id'];
 
                         if (userId != null && groupId != null) {
                           final added =
-                              await service.addUserToGroup(userId, groupId);
+                          await service.addUserToGroup(userId, groupId);
                           if (added) {
                             print("User successfully added to group");
                           } else {
@@ -166,7 +156,7 @@ class _GroupsPageState extends State<GroupsPage> with RouteAware {
                           }
                         }
 
-                        loadGroupsForUser();
+                        _loadGroupsForUser();
                         Navigator.of(context).pop();
                       } catch (e) {
                         print('Error creating group or adding user: $e');
@@ -219,20 +209,19 @@ class _GroupsPageState extends State<GroupsPage> with RouteAware {
               child: groups.isEmpty
                   ? Center(child: Text("No groups found"))
                   : ListView.builder(
-                      itemCount: groups.length,
-                      padding: EdgeInsets.all(10),
-                      itemBuilder: (context, index) {
-                        final group = groups[index];
-                        return Group(
-                          groupId: group.id,
-                          title: group.name,
-                          description: group.description,
-                          imagePath: group.imageUrl,
-                          routeObserver:
-                              widget.routeObserver, // Pass RouteObserver
-                        );
-                      },
-                    ),
+                itemCount: groups.length,
+                padding: EdgeInsets.all(10),
+                itemBuilder: (context, index) {
+                  final group = groups[index];
+                  return Group(
+                    groupId: group.id,
+                    title: group.name,
+                    description: group.description,
+                    imagePath: group.imageUrl,
+                    routeObserver: widget.routeObserver,
+                  );
+                },
+              ),
             ),
             Align(
               alignment: Alignment.centerRight,

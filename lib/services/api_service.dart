@@ -710,6 +710,28 @@ class ApiService {
     }
   }
 
+  Future<List<GroupData>> fetchUserGroups(int userId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/groups/user/$userId'),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      print("API Response Status: ${response.statusCode}");
+      print("API Response Body: ${response.body}");
+
+      if (response.statusCode == 200) {
+        final List<dynamic> jsonList = json.decode(response.body);
+        return jsonList.map((jsonItem) => GroupData.fromJson(jsonItem)).toList();
+      } else {
+        throw Exception('Failed to fetch groups: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error fetching groups: $e');
+      throw e;
+    }
+  }
+
   Future<bool> leaveGroup(int groupId, int userId) async {
     try {
       final response = await http.delete(
