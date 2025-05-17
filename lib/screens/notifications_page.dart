@@ -4,6 +4,7 @@ import 'package:studyfi/constants.dart';
 import 'package:studyfi/models/notification_model.dart';
 import 'package:studyfi/screens/groups/contents_page.dart';
 import 'package:studyfi/screens/groups/news_page.dart';
+import 'package:studyfi/screens/groups/post_page.dart';
 import 'package:studyfi/services/api_service.dart';
 import 'package:intl/intl.dart';
 
@@ -152,13 +153,38 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                   ),
                                 ),
                               );
+                            } else if (message.startsWith('new posst')) {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => PostsPage(
+                                    groupId: notification.groupId!,
+                                    groupName:
+                                    notification.groupName ?? 'Group',
+                                    groupImageUrl: null, // optional
+                                  ),
+                                ),
+                              );
                             } else {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                    content:
-                                        Text("Unknown notification type.")),
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => PostsPage(
+                                    groupId: notification.groupId!,
+                                    groupName:
+                                    notification.groupName ?? 'Group',
+                                    groupImageUrl: null, // optional
+                                  ),
+                                ),
                               );
                             }
+                            // else {
+                            //   ScaffoldMessenger.of(context).showSnackBar(
+                            //     const SnackBar(
+                            //         content:
+                            //             Text("Unknown notification type.")),
+                            //   );
+                            // }
                           },
                           title: CustomPoppinsText(
                             text: notification.message,

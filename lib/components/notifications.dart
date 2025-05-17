@@ -3,6 +3,7 @@ import 'package:studyfi/components/custom_poppins_text.dart';
 import 'package:studyfi/constants.dart';
 import 'package:studyfi/screens/groups/news_page.dart';
 import 'package:studyfi/screens/groups/contents_page.dart';
+import 'package:studyfi/screens/groups/post_page.dart';
 
 class Notifications extends StatelessWidget {
   final String imagePath;
@@ -54,11 +55,34 @@ class Notifications extends StatelessWidget {
           ),
         ),
       );
+    } else if (lowerTitle.startsWith("new post")) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => PostsPage(
+            groupId: groupId!,
+            groupName: groupName ?? "Group",
+            groupImageUrl: groupImageUrl,
+          ),
+        ),
+      );
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Unknown notification type.")),
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => PostsPage(
+            groupId: groupId!,
+            groupName: groupName ?? "Group",
+            groupImageUrl: groupImageUrl,
+          ),
+        ),
       );
     }
+    // else {
+    //   ScaffoldMessenger.of(context).showSnackBar(
+    //   const SnackBar(content: Text("Unknown notification type.")),
+    //   );
+    // }
   }
 
   @override
