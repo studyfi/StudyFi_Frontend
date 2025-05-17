@@ -9,6 +9,7 @@ class CustomPoppinsText extends StatelessWidget {
   final int? maxLines;
   final TextOverflow? overflow;
   final TextAlign? textAlign;
+  final List<Shadow>? shadows;
 
   const CustomPoppinsText({
     super.key,
@@ -19,6 +20,7 @@ class CustomPoppinsText extends StatelessWidget {
     this.maxLines,
     this.overflow,
     this.textAlign,
+    this.shadows,
   });
 
   @override
@@ -29,6 +31,7 @@ class CustomPoppinsText extends StatelessWidget {
         fontSize: fontSize,
         fontWeight: fontWeight,
         color: color,
+        shadows: shadows,
       ),
       maxLines: maxLines,
       overflow: overflow,
