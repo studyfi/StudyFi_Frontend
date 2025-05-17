@@ -6,20 +6,33 @@ class CustomPoppinsText extends StatelessWidget {
   final double fontSize;
   final FontWeight fontWeight;
   final Color color;
+  final int? maxLines;
+  final TextOverflow? overflow;
+  final TextAlign? textAlign;
 
-  const CustomPoppinsText(
-      {super.key,
-      required this.text,
-      required this.fontSize,
-      required this.fontWeight,
-      required this.color});
+  const CustomPoppinsText({
+    super.key,
+    required this.text,
+    required this.fontSize,
+    required this.fontWeight,
+    required this.color,
+    this.maxLines,
+    this.overflow,
+    this.textAlign,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Text(
       text,
       style: GoogleFonts.poppins(
-          fontSize: fontSize, color: color, fontWeight: fontWeight),
+        fontSize: fontSize,
+        fontWeight: fontWeight,
+        color: color,
+      ),
+      maxLines: maxLines,
+      overflow: overflow,
+      textAlign: textAlign,
     );
   }
 }

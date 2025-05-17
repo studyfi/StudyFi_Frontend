@@ -102,7 +102,7 @@ class _MembersPageState extends State<MembersPage> {
 
               // Group name and members count
               Padding(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 10),
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),  // Changed bottom padding to 0
                 child: Column(
                   children: [
                     CustomPoppinsText(
@@ -144,7 +144,7 @@ class _MembersPageState extends State<MembersPage> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 10),
                     const Divider(),
                   ],
                 ),
@@ -295,7 +295,7 @@ class _MembersPageState extends State<MembersPage> {
         trailing: Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
           decoration: BoxDecoration(
-            color: Constants.lgreen.withOpacity(0.2),
+            color: Constants.dgreen.withOpacity(0.1),
             borderRadius: BorderRadius.circular(20),
           ),
           child: const CustomPoppinsText(
