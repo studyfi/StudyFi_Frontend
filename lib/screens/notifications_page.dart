@@ -44,12 +44,17 @@ class _NotificationsPageState extends State<NotificationsPage> {
     });
 
     try {
-      List<NotificationModel> fetchedNotifications = await _apiService.fetchNotifications(widget.userId);
+      List<NotificationModel> fetchedNotifications =
+          await _apiService.fetchNotifications(widget.userId);
 
       // Sort notifications by timestamp (newest first)
       fetchedNotifications.sort((a, b) {
-        DateTime? aTime = a.timestamp != null ? DateTime.tryParse(a.timestamp!) : DateTime.now();
-        DateTime? bTime = b.timestamp != null ? DateTime.tryParse(b.timestamp!) : DateTime.now();
+        DateTime? aTime = a.timestamp != null
+            ? DateTime.tryParse(a.timestamp!)
+            : DateTime.now();
+        DateTime? bTime = b.timestamp != null
+            ? DateTime.tryParse(b.timestamp!)
+            : DateTime.now();
         return bTime!.compareTo(aTime!); // Descending order (newest first)
       });
 
@@ -116,128 +121,132 @@ class _NotificationsPageState extends State<NotificationsPage> {
         child: _isLoading
             ? const Center(child: CircularProgressIndicator())
             : _notifications.isEmpty
-            ? const Center(
-          child: CustomPoppinsText(
-            text: 'No notifications',
-            fontSize: 16,
-            fontWeight: FontWeight.w400,
-            color: Colors.grey,
-          ),
-        )
-            : ListView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: _notifications.length,
-          itemBuilder: (context, index) {
-            final notification = _notifications[index];
-            return Card(
-              margin: const EdgeInsets.only(bottom: 12),
-              color: Colors.white,
-              child: ListTile(
-                contentPadding: const EdgeInsets.all(16),
-                onTap: () {
-                  final message = notification.message.toLowerCase();
-
-                  if (notification.groupId == null) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                          content: Text(
-                              "No group associated with this notification.")),
-                    );
-                    return;
-                  }
-
-                  if (message.startsWith('new news')) {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => NewsPage(
-                          groupId: notification.groupId!,
-                          groupName:
-                          notification.groupName ?? 'Group',
-                        ),
-                      ),
-                    ).then((_) => _loadNotifications()); // Refresh on pop
-                  } else if (message.startsWith('new content')) {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => ContentsPage(
-                          groupId: notification.groupId!,
-                          groupName:
-                          notification.groupName ?? 'Group',
-                          groupImageUrl: null,
-                        ),
-                      ),
-                    ).then((_) => _loadNotifications()); // Refresh on pop
-                  } else if (message.startsWith('new posst')) {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => PostsPage(
-                          groupId: notification.groupId!,
-                          groupName:
-                          notification.groupName ?? 'Group',
-                          groupImageUrl: null,
-                        ),
-                      ),
-                    ).then((_) => _loadNotifications()); // Refresh on pop
-                  } else {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => PostsPage(
-                          groupId: notification.groupId!,
-                          groupName:
-                          notification.groupName ?? 'Group',
-                          groupImageUrl: null,
-                        ),
-                      ),
-                    ).then((_) => _loadNotifications()); // Refresh on pop
-                  }
-                },
-                title: CustomPoppinsText(
-                  text: notification.message,
-                  fontSize: 16,
-                  fontWeight: notification.read
-                      ? FontWeight.w400
-                      : FontWeight.w600,
-                  color: Colors.black,
-                ),
-                subtitle: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 4),
-                    if (notification.groupName != null)
-                      CustomPoppinsText(
-                        text: notification.groupName!,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w400,
-                        color: Constants.dgreen,
-                      ),
-                    const SizedBox(height: 4),
-                    CustomPoppinsText(
-                      text: _formatTimestamp(notification.timestamp),
-                      fontSize: 12,
+                ? const Center(
+                    child: CustomPoppinsText(
+                      text: 'No notifications',
+                      fontSize: 16,
                       fontWeight: FontWeight.w400,
-                      color: Colors.grey[600] ?? Colors.grey,
+                      color: Colors.grey,
                     ),
-                  ],
-                ),
-                leading: CircleAvatar(
-                  backgroundColor: Constants.lgreen,
-                  child: Icon(
-                    notification.message
-                        .toLowerCase()
-                        .contains('news')
-                        ? Icons.newspaper
-                        : Icons.article,
-                    color: Constants.dgreen,
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: _notifications.length,
+                    itemBuilder: (context, index) {
+                      final notification = _notifications[index];
+                      return Card(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        color: Colors.white,
+                        child: ListTile(
+                          contentPadding: const EdgeInsets.all(16),
+                          onTap: () {
+                            final message = notification.message.toLowerCase();
+
+                            if (notification.groupId == null) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                    content: Text(
+                                        "No group associated with this notification.")),
+                              );
+                              return;
+                            }
+
+                            if (message.startsWith('new news')) {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => NewsPage(
+                                    groupId: notification.groupId!,
+                                    groupName:
+                                        notification.groupName ?? 'Group',
+                                  ),
+                                ),
+                              ).then((_) =>
+                                  _loadNotifications()); // Refresh on pop
+                            } else if (message.startsWith('new content')) {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => ContentsPage(
+                                    groupId: notification.groupId!,
+                                    groupName:
+                                        notification.groupName ?? 'Group',
+                                    groupImageUrl: null,
+                                  ),
+                                ),
+                              ).then((_) =>
+                                  _loadNotifications()); // Refresh on pop
+                            } else if (message.startsWith('new post')) {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => PostsPage(
+                                    groupId: notification.groupId!,
+                                    groupName:
+                                        notification.groupName ?? 'Group',
+                                    groupImageUrl: null,
+                                  ),
+                                ),
+                              ).then((_) =>
+                                  _loadNotifications()); // Refresh on pop
+                            } else {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => PostsPage(
+                                    groupId: notification.groupId!,
+                                    groupName:
+                                        notification.groupName ?? 'Group',
+                                    groupImageUrl: null,
+                                  ),
+                                ),
+                              ).then((_) =>
+                                  _loadNotifications()); // Refresh on pop
+                            }
+                          },
+                          title: CustomPoppinsText(
+                            text: notification.message,
+                            fontSize: 16,
+                            fontWeight: notification.read
+                                ? FontWeight.w400
+                                : FontWeight.w600,
+                            color: Colors.black,
+                          ),
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const SizedBox(height: 4),
+                              if (notification.groupName != null)
+                                CustomPoppinsText(
+                                  text: notification.groupName!,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w400,
+                                  color: Constants.dgreen,
+                                ),
+                              const SizedBox(height: 4),
+                              CustomPoppinsText(
+                                text: _formatTimestamp(notification.timestamp),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w400,
+                                color: Colors.grey[600] ?? Colors.grey,
+                              ),
+                            ],
+                          ),
+                          leading: CircleAvatar(
+                            backgroundColor: Constants.lgreen,
+                            child: Icon(
+                              notification.message
+                                      .toLowerCase()
+                                      .contains('news')
+                                  ? Icons.newspaper
+                                  : Icons.article,
+                              color: Constants.dgreen,
+                            ),
+                          ),
+                        ),
+                      );
+                    },
                   ),
-                ),
-              ),
-            );
-          },
-        ),
       ),
     );
   }

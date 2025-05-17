@@ -84,7 +84,7 @@ class _LoginPageState extends State<LoginPage> {
                         );
                       },
                       child: CustomPoppinsText(
-                          text: "Forget password?",
+                          text: "Forgot password?",
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
                           color: Constants.dgreen),

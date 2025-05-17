@@ -454,14 +454,18 @@ class ApiService {
         final List<dynamic> data = json.decode(response.body);
         if (data == null) return [];
 
-        return data.map((item) {
-          try {
-            return GroupContent.fromJson(item);
-          } catch (e) {
-            print('Error parsing content item: $e');
-            return null;
-          }
-        }).where((item) => item != null).toList().cast<GroupContent>();
+        return data
+            .map((item) {
+              try {
+                return GroupContent.fromJson(item);
+              } catch (e) {
+                print('Error parsing content item: $e');
+                return null;
+              }
+            })
+            .where((item) => item != null)
+            .toList()
+            .cast<GroupContent>();
       } catch (e) {
         print('Error parsing response: $e');
         throw Exception('Failed to parse content data');
@@ -736,7 +740,9 @@ class ApiService {
 
       if (response.statusCode == 200) {
         final List<dynamic> jsonList = json.decode(response.body);
-        return jsonList.map((jsonItem) => GroupData.fromJson(jsonItem)).toList();
+        return jsonList
+            .map((jsonItem) => GroupData.fromJson(jsonItem))
+            .toList();
       } else {
         throw Exception('Failed to fetch groups: ${response.statusCode}');
       }
