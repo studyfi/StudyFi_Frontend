@@ -186,10 +186,10 @@ git clone https://github.com/studyfi/StudyFi_Frontend.git
 cd StudyFi_Frontend
 flutter pub get
 flutter run
+```
 
 ## 🔗 Useful Links
 
-- [GitHub Frontend](https://github.com/studyfi/StudyFi_Frontend)  
 - [GitHub Backend](https://github.com/studyfi/StudyFi-Backend)  
 - [YouTube Demo](https://youtu.be/6EWDbcS4pzE)
 
