@@ -1,23 +1,23 @@
 # 📘 StudyFi Frontend
 
 ## 📌 Table of Contents
-1. [Introduction](#introduction)  
-2. [Technology Stack](#technology-stack)  
-3. [Architecture Overview](#architecture-overview)  
-4. [Folder Structure](#folder-structure)  
-5. [UI Pages and Workflows](#ui-pages-and-workflows)  
-    - Login  
-    - Signup  
-    - Home  
-    - Groups  
-    - Group Detail  
-    - Notifications  
-    - Profile  
-6. [API Integration](#api-integration)  
-7. [State Management and Session Handling](#state-management-and-session-handling)  
-8. [Validation and Error Handling](#validation-and-error-handling)  
-9. [Setup Instructions](#setup-instructions)  
-10. [Useful Links](#useful-links)  
+1. 📖 Introduction  
+2. 🛠️ Technology Stack  
+3. 🧱 Architecture Overview  
+4. 🗂️ Folder Structure  
+5. 📱 UI Pages and Workflows  
+   - 🔐 Login  
+   - 📝 Signup  
+   - 🏠 Home  
+   - 👥 Groups  
+   - 📚 Group Detail  
+   - 🔔 Notifications  
+   - 🙍‍♀️ Profile  
+6. 🌐 API Integration  
+7. 💾 State Management and Session Handling  
+8. 🛡️ Validation and Error Handling  
+9. 🧪 Setup Instructions  
+10. 🔗 Useful Links
 
 ---
 
@@ -50,16 +50,17 @@
 - Response → processed in Flutter and stored (e.g., SharedPreferences)
 
 ---
+## 📁 Folder Structure
 
-## 🗂️ Folder Structure
-
+```plaintext
 lib/
-├── components/ # Reusable widgets (buttons, text fields, etc.)
-├── models/ # Data models (User, Group, Post, etc.)
-├── screens/ # UI pages (Login, Signup, Home, etc.)
-├── services/ # API communication (ApiService)
-├── constants.dart # Colors, fonts, sizes
-└── main.dart # App entry point and route management
+├── components/       # Reusable widgets (buttons, text fields, etc.)
+├── models/           # Data models (User, Group, Post, etc.)
+├── screens/          # UI pages (Login, Signup, Home, etc.)
+├── services/         # API communication (ApiService)
+├── constants.dart    # Colors, fonts, sizes
+└── main.dart         # App entry point and route management
+```
 
 
 ---
