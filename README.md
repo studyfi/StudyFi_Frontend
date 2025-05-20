@@ -132,24 +132,48 @@ lib/
 
 ## 🌐 API Integration
 
-### ApiService Handles:
-- **Authentication**:
-  - `POST /users/login`
-  - `POST /users/register`
-- **Profile**:
-  - `GET /users/{id}`
-  - `PUT /users/profile/{id}`
-- **Groups**:
-  - `GET /groups/user/{id}`
-  - `POST /groups/create`
-- **Content**:
-  - `POST /content/upload`
-  - `GET /content/group/{groupId}`
-- **Posts & Comments**:
-  - `POST /chats/groups/{groupId}/posts`
-  - `POST /chats/posts/{postId}/comments`
-- **Notifications**:
-  - `GET /notifications/getnotifications/{userId}`
+The `ApiService` class communicates with the backend through the following endpoints:
+
+### 🔐 Authentication & User
+- `POST /users/login` – Login user
+- `POST /users/register` – Register new user
+- `POST /users/forgot-password` – Send password reset link
+- `POST /users/reset-password` – Reset user password
+- `GET /users/$userId` – Get user profile
+- `PUT /users/profile/$userId` – Update user profile
+
+### 📧 Email Verification
+- `POST /email-verification/send-email-code` – Send verification code
+- `POST /email-verification/validate-email-code` – Verify entered code
+
+### 👥 Groups
+- `GET /groups/user/$userId` – Get groups joined by user
+- `GET /groups/notjoined/user/$userId` – Get groups not joined by user
+- `POST /groups/create` – Create a new group
+- `PUT /groups/update/$groupId` – Update a group
+- `DELETE /groups/remove/$groupId/user/$userId` – Remove user from group
+- `GET /groups/$groupId/counts` – Get group content, news, member counts
+- `GET /groups/$groupId/users` – Get all users in a group
+
+### 📁 Academic Content
+- `POST /content/upload` – Upload academic files
+- `GET /content/group/$groupId` – Get files for a group
+
+### 📰 News
+- `GET /news/group/$groupId` – Get all news for a group
+- `POST /news/post` – Post a news update
+
+### 💬 Posts & Comments
+- `POST /chats/groups/$groupId/posts` – Add a new post in group
+- `POST /chats/posts/$postId/comments` – Add comment to a post
+- `POST /chats/posts/$postId/likes` – Like a post
+- `GET /chats/posts/$postId/likes?userId=$userId` – Get all likes on a post
+- `GET /chats/posts/$postId/likes?currentUserId=$userId` – Check if current user liked
+
+### 🔔 Notifications
+- `GET /notifications/getnotifications/$userId` – Fetch user notifications
+- `PUT /notifications/markallasread/$userId` – Mark all notifications as read
+
 
 ---
 
